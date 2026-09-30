@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Better VERT · Universal Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/style.css" />
+  <!-- Marked.js for real-time rich Markdown preview -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+  <!-- Full-Page Drag & Drop Overlay (Inspired by p2r3/convert) -->
+  <div class="full-page-drop-overlay" id="fullPageDropOverlay">
+    <div class="drop-overlay-card">
+      <div class="drop-overlay-icon">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="17 8 12 3 7 8"></polyline>
+          <line x1="12" y1="3" x2="12" y2="15"></line>
+        </svg>
+      </div>
+      <h2>Drop files anywhere to convert</h2>
+      <p>Universal 250+ format cross-medium conversion suite</p>
+    </div>
+  </div>
+
+  <div class="glow-bg"></div>
+
+  <header class="app-header">
+    <div class="header-left">
+      <div class="brand-title-row">
+        <div class="vert-logo-pill">VERT</div>
+      </div>
+      <span class="brand-sub">Universal Converter &amp; MarkItDown Studio</span>
+    </div>
+
+    <div class="header-right">
+      <div class="telemetry-pill" id="telemetryPill" title="Multi-Threaded Engine">
+        <span class="pulse-dot"></span>
+        <span id="telemetryText">Detecting hardware&hellip;</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-container">
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs">
+      <button class="tab-btn active" data-tab="tab-universal" id="btnTabUniversal">
+        <span class="tab-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="17 1 21 5 17 9"></polyline>
+            <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+            <polyline points="7 23 3 19 7 15"></polyline>
+            <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+          </svg>
+        </span>
+        <span class="tab-title">Converter</span>
+        <span class="tab-hint">Universal 250+ (Minimal)</span>
+      </button>
+
+      <button class="tab-btn" data-tab="tab-markdown" id="btnTabMarkdown">
+        <span class="tab-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+        </span>
+        <span class="tab-title">Markdown Studio</span>
+        <span class="tab-hint">MarkItDown + OCR</span>
+      </button>
+
+      <button class="tab-btn" data-tab="tab-pdf" id="btnTabPdf">
+        <span class="tab-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="9" y1="13" x2="15" y2="13"></line>
+            <line x1="9" y1="17" x2="13" y2="17"></line>
+          </svg>
+        </span>
+        <span class="tab-title">PDF Studio</span>
+        <span class="tab-hint">Merge &amp; Split Poppler</span>
+      </button>
+
+      <button class="tab-btn" data-tab="tab-inspector" id="btnTabInspector">
+        <span class="tab-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            <line x1="11" y1="8" x2="11" y2="14"></line>
+            <line x1="8" y1="11" x2="14" y2="11"></line>
+          </svg>
+        </span>
+        <span class="tab-title">Inspector</span>
+        <span class="tab-hint">Stream &amp; metadata probe</span>
+      </button>
+
+      <button class="tab-btn" data-tab="tab-batch" id="btnTabBatch">
+        <span class="tab-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+          </svg>
+        </span>
+        <span class="tab-title">Batch Folder</span>
+        <span class="tab-hint"><code>./input</code> &rarr; <code>./output</code></span>
+      </button>
+
+      <button class="tab-btn" data-tab="tab-settings" id="btnTabSettings">
+        <span class="tab-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </span>
+        <span class="tab-title">Settings</span>
+        <span class="tab-hint">Preferences &amp; Studio</span>
+      </button>
+    </nav>
+
+    <!-- Tab 1: Universal Converter (VERT & Convert to it Inspired) -->
+    <section class="tab-content active" id="tab-universal">
+      <!-- 1. Home View (Shown when no files staged - inspired by VERT) -->
+      <div class="vert-home-hero" id="universalHomeHero">
+        <div class="vert-hero-split">
+          <!-- Left Hero Column -->
+          <div class="vert-hero-left">
+            <div class="hero-chip">
+              <span class="hero-chip-dot"></span>
+              <span>LOCAL-FIRST UNIVERSAL STUDIO</span>
+            </div>
+            <h1 class="vert-hero-title">The file converter<br />you'll love.</h1>
+            <p class="vert-hero-desc">
+              All image, audio, and document processing is done on your device. Videos are converted on our lightning-fast multi-threaded engine. No file size limit, no ads, and completely open source.
+            </p>
+            <div class="hero-badges-row">
+              <span class="hero-badge" id="heroBadgeCores">Multi-Core Engine</span>
+              <span class="hero-badge">Web FastStart</span>
+              <span class="hero-badge">2-Pass Lanczos GIF</span>
+              <span class="hero-badge">OpenPyXL Excel</span>
+            </div>
+          </div>
+
+          <!-- Right Hero Column: Dropzone Card (inspired by Screenshot 1 & 2) -->
+          <div class="vert-hero-right">
+            <div class="vert-drop-card" id="dropzoneUniversal">
+              <div class="vert-drop-icon-circle">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+              </div>
+              <h3 class="vert-drop-title">Drop or click to convert</h3>
+              <p class="vert-drop-sub">Click to select a file or drag and drop</p>
+              <span class="vert-drop-hint">Supports 250+ media, doc &amp; data formats</span>
+              <input type="file" id="fileInputUniversal" class="hidden-input" multiple />
+            </div>
+          </div>
+        </div>
+
+        <!-- VERT Supports Showcase Cards (inspired by Screenshot 1) -->
+        <div class="vert-supports-section">
+          <h3 class="supports-title">VERT supports...</h3>
+          <div class="supports-grid">
+            <!-- Images Card -->
+            <div class="support-card" data-cat-trigger="image">
+              <div class="support-card-header">
+                <div class="support-card-icon icon-emerald">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                    <polyline points="21 15 16 10 5 21"></polyline>
+                  </svg>
+                </div>
+                <span class="support-card-name">Images</span>
+              </div>
+              <div class="support-card-meta">
+                <span class="meta-item"><span class="check-mark">&#10003;</span> Local supported</span>
+                <span class="meta-status">Status: <strong>ready</strong></span>
+              </div>
+              <div class="support-card-formats-label">Supported formats:</div>
+              <div class="support-card-formats">.png, .jpeg, .jpg, .webp, .gif, .svg, .avif, .bmp, .ico, .tiff, .pbm...</div>
+            </div>
+
+            <!-- Audio Card -->
+            <div class="support-card" data-cat-trigger="audio">
+              <div class="support-card-header">
+                <div class="support-card-icon icon-purple">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 1v22"></path>
+                    <path d="M17 5v14"></path>
+                    <path d="M7 5v14"></path>
+                    <path d="M22 9v6"></path>
+                    <path d="M2 9v6"></path>
+                  </svg>
+                </div>
+                <span class="support-card-name">Audio</span>
+              </div>
+              <div class="support-card-meta">
+                <span class="meta-item"><span class="check-mark">&#10003;</span> Local supported</span>
+                <span class="meta-status">Status: <strong>ready</strong></span>
+              </div>
+              <div class="support-card-formats-label">Supported formats:</div>
+              <div class="support-card-formats">.mp3, .wav, .flac, .ogg, .opus, .aac, .m4a, .aiff, .wma, .alac, .caf...</div>
+            </div>
+
+            <!-- Documents Card -->
+            <div class="support-card" data-cat-trigger="document">
+              <div class="support-card-header">
+                <div class="support-card-icon icon-blue">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                  </svg>
+                </div>
+                <span class="support-card-name">Documents</span>
+              </div>
+              <div class="support-card-meta">
+                <span class="meta-item"><span class="check-mark">&#10003;</span> Local supported</span>
+                <span class="meta-status">Status: <strong>ready</strong></span>
+              </div>
+              <div class="support-card-formats-label">Supported formats:</div>
+              <div class="support-card-formats">.docx, .doc, .md, .html, .rtf, .pdf, .epub, .txt, .odt, .latex, .typst...</div>
+            </div>
+
+            <!-- Video Card -->
+            <div class="support-card" data-cat-trigger="video">
+              <div class="support-card-header">
+                <div class="support-card-icon icon-rose">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
+                    <line x1="7" y1="2" x2="7" y2="22"></line>
+                    <line x1="17" y1="2" x2="17" y2="22"></line>
+                    <line x1="2" y1="12" x2="22" y2="12"></line>
+                  </svg>
+                </div>
+                <span class="support-card-name">Video</span>
+              </div>
+              <div class="support-card-meta">
+                <span class="meta-item-server"><span class="check-mark">&#10003;</span> Hardware accelerated*</span>
+                <span class="meta-status">Status: <strong>ready</strong></span>
+              </div>
+              <div class="support-card-formats-label">Supported formats:</div>
+              <div class="support-card-formats">.mp4, .mkv, .webm, .avi, .wmv, .mov, .gif, .av1, .flv, .m4v, .ts, .mts...</div>
+            </div>
+
+            <!-- Data & Pipelines Card -->
+            <div class="support-card" data-cat-trigger="data">
+              <div class="support-card-header">
+                <div class="support-card-icon icon-amber">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                  </svg>
+                </div>
+                <span class="support-card-name">Data &amp; Pipelines</span>
+              </div>
+              <div class="support-card-meta">
+                <span class="meta-item"><span class="check-mark">&#10003;</span> Local supported</span>
+                <span class="meta-status">Status: <strong>ready</strong></span>
+              </div>
+              <div class="support-card-formats-label">Supported formats:</div>
+              <div class="support-card-formats">.xlsx, .json, .csv, .yaml, .xml, .html table, PDF Storyboard, Waveform...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Active Conversion Studio (Shown when files staged - inspired by Convert to it!) -->
+      <div class="vert-active-studio" id="universalControls" style="display: none;">
+        <!-- Top Flow Header (inspired by Screenshot 3) -->
+        <div class="flow-header-banner">
+          <div class="flow-step flow-input-step">
+            <div class="flow-file-badge" id="selectedFileExt">PNG</div>
+            <div class="flow-file-info">
+              <span class="flow-file-name" id="selectedFileName">filename.png</span>
+              <span class="flow-file-size" id="selectedFileSize">0 KB</span>
+            </div>
+          </div>
+
+          <div class="flow-arrow">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </div>
+
+          <div class="flow-step flow-output-step" id="flowOutputStep">
+            <div class="flow-target-badge" id="flowTargetExtBadge">MP4</div>
+            <div class="flow-target-info">
+              <span class="flow-target-name" id="flowTargetName">MPEG-4 Part 14</span>
+              <span class="flow-target-hint">Selected Output Format</span>
+            </div>
+          </div>
+
+          <div class="flow-spacer"></div>
+
+          <button type="button" class="btn-adv-mode-toggle" id="btnInspectStagedFile" title="Probe metadata, streams & codecs">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              <line x1="11" y1="8" x2="11" y2="14"></line>
+              <line x1="8" y1="11" x2="14" y2="11"></line>
+            </svg>
+            <span>Inspect</span>
+          </button>
+
+          <button type="button" class="btn-adv-mode-toggle" id="btnToggleAdvanced" aria-expanded="false" title="Toggle encoding settings">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="4" y1="21" x2="4" y2="14"></line>
+              <line x1="4" y1="10" x2="4" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12" y2="3"></line>
+              <line x1="20" y1="21" x2="20" y2="16"></line>
+              <line x1="20" y1="12" x2="20" y2="3"></line>
+              <line x1="1" y1="14" x2="7" y2="14"></line>
+              <line x1="9" y1="8" x2="15" y2="8"></line>
+              <line x1="17" y1="16" x2="23" y2="16"></line>
+            </svg>
+            <span>Advanced mode</span>
+            <svg class="chevron-icon" id="advChevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+        </div>
+
+        <!-- 1-Click Smart Actions Hub -->
+        <div class="smart-actions-hub" id="smartActionsHub" style="display: none;">
+          <div class="smart-actions-header">
+            <span class="smart-hub-badge">QUICK RECIPES</span>
+            <span class="smart-hub-label">1-Click studio actions for this file:</span>
+          </div>
+          <div class="smart-actions-chips" id="smartActionsChips"></div>
+        </div>
+
+        <!-- Format Search & Categories Toolbar (inspired by Screenshot 3) -->
+        <div class="format-toolbar">
+          <div class="format-search-box">
+            <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="formatSearchInput" class="format-search-input" placeholder="Search formats..." />
+            <button class="search-clear-btn" id="btnClearSearch" type="button" style="display: none;">&times;</button>
+          </div>
+
+          <div class="category-pills-minimal" id="categoryPills">
+            <button class="cat-pill active" data-cat="all">All</button>
+            <button class="cat-pill" data-cat="video">Video</button>
+            <button class="cat-pill" data-cat="audio">Audio</button>
+            <button class="cat-pill" data-cat="image">Image</button>
+            <button class="cat-pill" data-cat="document">Doc</button>
+            <button class="cat-pill" data-cat="data">Data</button>
+            <button class="cat-pill cat-pill-cross" data-cat="cross">Cross-Medium</button>
+          </div>
+        </div>
+
+        <!-- Visual Format Cards Grid (inspired by Screenshot 3) -->
+        <div class="format-grid-section">
+          <div class="format-grid-header">
+            <span class="format-grid-count" id="formatGridCount">250+ OUTPUT FORMATS</span>
+          </div>
+          <div class="format-cards-grid" id="formatCardsGrid"></div>
+        </div>
+
+        <!-- Hidden native select for full programmatic compatibility -->
+        <select id="selectTargetFormat" class="custom-select" style="display: none;"></select>
+
+        <!-- Advanced Options Collapsible Drawer -->
+        <div class="advanced-panel" id="advancedPanel" style="display: none;">
+          <div class="advanced-grid">
+            <!-- Quality / CRF -->
+            <div class="adv-group" id="advGroupCrf">
+              <label for="advCrf">Video Quality (CRF)</label>
+              <select id="advCrf" class="adv-input">
+                <option value="18">High Quality (CRF 18 · Near Lossless)</option>
+                <option value="22" selected>Balanced (CRF 22 · Recommended)</option>
+                <option value="26">Smaller File (CRF 26)</option>
+                <option value="28">Fast Web (CRF 28)</option>
+              </select>
+              <span class="adv-sub">Lower CRF means higher visual quality</span>
+            </div>
+
+            <!-- Resolution / Scale -->
+            <div class="adv-group" id="advGroupRes">
+              <label for="advResolution">Resolution / Scale</label>
+              <select id="advResolution" class="adv-input">
+                <option value="original" selected>Original Dimensions</option>
+                <option value="4k">4K (3840 &times; 2160)</option>
+                <option value="1080p">1080p Full HD (1920 &times; 1080)</option>
+                <option value="720p">720p HD (1280 &times; 720)</option>
+                <option value="480p">480p SD (854 &times; 480)</option>
+              </select>
+              <span class="adv-sub">Hardware-scaled Lanczos resize</span>
+            </div>
+
+            <!-- Video Codec -->
+            <div class="adv-group" id="advGroupCodec">
+              <label for="advVideoCodec">Video Codec</label>
+              <select id="advVideoCodec" class="adv-input">
+                <option value="" selected>Auto (Recommended Standard)</option>
+                <option value="libx264">H.264 (libx264 · Universal Compatibility)</option>
+                <option value="libx265">H.265 / HEVC (libx265 · High Compression)</option>
+                <option value="libvpx-vp9">VP9 (libvpx-vp9 · Open Web)</option>
+              </select>
+              <span class="adv-sub">Auto-Threaded Across All CPU Cores</span>
+            </div>
+
+            <!-- Audio Bitrate -->
+            <div class="adv-group" id="advGroupAudio">
+              <label for="advAudioBitrate">Audio Bitrate</label>
+              <select id="advAudioBitrate" class="adv-input">
+                <option value="128k">128 kbps (Compact / Voice)</option>
+                <option value="192k" selected>192 kbps (Standard High-Fidelity)</option>
+                <option value="256k">256 kbps (Studio Quality)</option>
+                <option value="320k">320 kbps (Maximum Bitrate)</option>
+              </select>
+              <span class="adv-sub">Applies to MP3, AAC, M4A, Opus</span>
+            </div>
+
+            <!-- Frame Rate -->
+            <div class="adv-group" id="advGroupFps">
+              <label for="advFps">Frame Rate (FPS)</label>
+              <select id="advFps" class="adv-input">
+                <option value="original" selected>Keep Original FPS</option>
+                <option value="60">60 FPS (Smooth Motion)</option>
+                <option value="30">30 FPS (Standard Video)</option>
+                <option value="24">24 FPS (Cinematic 24p)</option>
+              </select>
+              <span class="adv-sub">Resamples video frame timing</span>
+            </div>
+
+            <!-- Image Quality -->
+            <div class="adv-group" id="advGroupQuality">
+              <label for="advQuality">Image Compression Quality</label>
+              <select id="advQuality" class="adv-input">
+                <option value="100">100% (Lossless / Maximum)</option>
+                <option value="90">90% (High Quality)</option>
+                <option value="85" selected>85% (Optimized Web)</option>
+                <option value="70">70% (Compact Size)</option>
+              </select>
+              <span class="adv-sub">ImageMagick quality parameter</span>
+            </div>
+
+            <!-- Time Trimming -->
+            <div class="adv-group" id="advGroupTrim">
+              <label>Time Trimming</label>
+              <div class="adv-split-row">
+                <input type="text" id="advTrimStart" class="adv-input" placeholder="Start: 00:00:00" title="Start timestamp or seconds" />
+                <input type="text" id="advTrimDuration" class="adv-input" placeholder="Duration (sec)" title="Duration in seconds" />
+              </div>
+              <span class="adv-sub">Hardware keyframe seek without decoding lag</span>
+            </div>
+
+            <!-- Playback Speed -->
+            <div class="adv-group" id="advGroupSpeed">
+              <label for="advPlaybackSpeed">Playback Speed</label>
+              <select id="advPlaybackSpeed" class="adv-input">
+                <option value="1.0" selected>1.0x (Normal Speed)</option>
+                <option value="0.5">0.5x (Slow Motion)</option>
+                <option value="0.75">0.75x</option>
+                <option value="1.25">1.25x</option>
+                <option value="1.5">1.5x (Speed Up)</option>
+                <option value="2.0">2.0x (Double Speed)</option>
+              </select>
+              <span class="adv-sub">Synchronized video PTS &amp; audio tempo filter</span>
+            </div>
+
+            <!-- Audio Channels & Loudnorm -->
+            <div class="adv-group" id="advGroupAudioPro">
+              <label for="advAudioChannels">Audio Channels &amp; Loudness</label>
+              <div class="adv-split-row">
+                <select id="advAudioChannels" class="adv-input">
+                  <option value="" selected>Auto Channels</option>
+                  <option value="stereo">Stereo (2.0)</option>
+                  <option value="mono">Mono (1.0)</option>
+                  <option value="mute">Mute (No Audio)</option>
+                </select>
+                <label class="adv-checkbox-label" title="Broadcast standard EBU R128 (-16 LUFS)">
+                  <input type="checkbox" id="advLoudnorm" />
+                  <span>EBU Loudnorm</span>
+                </label>
+              </div>
+              <span class="adv-sub">EBU R128 broadcast loudness normalization</span>
+            </div>
+
+            <!-- Image / Page Color Filter -->
+            <div class="adv-group" id="advGroupFilter">
+              <label for="advColorFilter">Image / Page Color Filter</label>
+              <select id="advColorFilter" class="adv-input">
+                <option value="" selected>None (Original Colors)</option>
+                <option value="grayscale">Grayscale / B&amp;W</option>
+                <option value="sepia">Vintage Sepia</option>
+                <option value="invert">Invert Colors (Negative)</option>
+                <option value="monochrome">Pure Monochrome (Document)</option>
+              </select>
+              <span class="adv-sub">Applies to images and PDF vector rasterization</span>
+            </div>
+
+            <!-- Document / PDF Rendering DPI -->
+            <div class="adv-group" id="advGroupDpi">
+              <label for="advDpi">Page Rendering DPI</label>
+              <select id="advDpi" class="adv-input">
+                <option value="150" selected>150 DPI (Balanced Web)</option>
+                <option value="200">200 DPI (Crisp Text)</option>
+                <option value="300">300 DPI (Ultra Print Quality)</option>
+              </select>
+              <span class="adv-sub">Poppler vector rasterization density</span>
+            </div>
+          </div>
+
+          <div class="adv-footer">
+            <span class="adv-note">Configured options apply automatically to this conversion.</span>
+            <button type="button" class="btn-adv-reset" id="btnResetAdvanced">Reset to Defaults</button>
+          </div>
+        </div>
+
+        <!-- macOS Studio Developer Terminal Console Dropdown -->
+        <div class="terminal-console" id="terminalConsole">
+          <div class="terminal-titlebar" id="terminalTitlebar" role="button" aria-expanded="false" tabindex="0" title="Click to toggle Terminal Console">
+            <div class="terminal-controls">
+              <span class="term-dot term-dot-close"></span>
+              <span class="term-dot term-dot-min"></span>
+              <span class="term-dot term-dot-max"></span>
+            </div>
+
+            <div class="terminal-title-group">
+              <svg class="terminal-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="4 17 10 11 4 5"></polyline>
+                <line x1="12" y1="19" x2="20" y2="19"></line>
+              </svg>
+              <span class="terminal-title-text">Console · Hardware Engine</span>
+            </div>
+
+            <div class="terminal-actions">
+              <div class="term-status-badge" id="terminalStatusBadge">
+                <span class="term-pulse-dot"></span>
+                <span id="terminalStatusText">READY</span>
+              </div>
+              <button type="button" class="btn-term-action" id="btnCopyTerminalLogs" title="Copy console logs to clipboard">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                <span>Copy</span>
+              </button>
+              <button type="button" class="btn-term-action" id="btnClearTerminalLogs" title="Clear console output">
+                <span>Clear</span>
+              </button>
+              <svg class="term-chevron" id="terminalChevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Sleek Titlebar Progress Track: Always visible across the entire terminal width -->
+          <div class="terminal-titlebar-track" id="termTitlebarTrack">
+            <div class="terminal-titlebar-fill" id="termTitlebarFill" style="width: 0%;"></div>
+          </div>
+
+          <div class="terminal-body" id="terminalBody" style="display: none;">
+            <div class="term-progress-panel" id="terminalProgressPanel">
+              <div class="term-progress-header">
+                <div class="term-step-indicator">
+                  <span class="term-step-tag">TASK:</span>
+                  <span class="term-step-desc" id="termStepDesc">Awaiting conversion trigger...</span>
+                </div>
+                <div class="term-pct-display">
+                  <span class="term-hw-tag" id="termHwTag">DETECTING CORES&hellip;</span>
+                  <span class="term-pct-num" id="termPctNum">0%</span>
+                </div>
+              </div>
+              <div class="term-progress-track" id="termProgressTrack" title="Conversion Progress">
+                <div class="term-progress-fill" id="termProgressFill" style="width: 0%;"></div>
+              </div>
+              <div class="term-progress-ticks">
+                <span>0%</span>
+                <span>25%</span>
+                <span>50%</span>
+                <span>75%</span>
+                <span>100%</span>
+              </div>
+            </div>
+
+            <div class="terminal-stream-wrapper">
+              <div class="terminal-stream" id="terminalStream">
+                <div class="log-line"><span class="log-token-init">[INIT]</span> Better VERT Developer Console initialized. Ready for file conversion.</div>
+              </div>
+              <div class="terminal-prompt-row">
+                <span class="term-prompt-user">vert@better-vert</span><span class="term-prompt-sep">:</span><span class="term-prompt-path">~</span><span class="term-prompt-char">$</span>
+                <span class="term-cursor-blink">&#9608;</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Traversion Route Badge -->
+        <div class="route-badge-container" id="routeBadgeContainer" style="display: none;">
+          <span class="route-tag">Pipeline Route</span>
+          <span class="route-badge" id="routeBadgeText">Video ➔ Storyboard PDF</span>
+        </div>
+
+        <!-- In-Browser Media Preview (Video / Audio / Image) -->
+        <div class="media-preview-container" id="mediaPreviewContainer" style="display: none;"></div>
+
+        <!-- Download Banner -->
+        <div class="download-banner" id="universalResult" style="display: none;">
+          <div class="result-info">
+            <span class="result-check">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </span>
+            <span class="result-title" id="universalResultTitle">Conversion complete!</span>
+          </div>
+          <a class="btn btn-success" id="btnDownloadUniversal" download>Download Output</a>
+        </div>
+
+        <!-- Multi-File Batch Queue View (Legacy container) -->
+        <div class="multi-file-queue" id="multiFileQueueContainer" style="display: none;">
+          <div class="multi-queue-header">
+            <div class="queue-title-row">
+              <span class="queue-title">Batch Queue</span>
+              <span class="badge badge-accent" id="multiFileCount">0 files</span>
+            </div>
+            <button class="btn-subtle-sm" id="btnClearMultiQueue" type="button">Clear Queue</button>
+          </div>
+          <div class="multi-file-list" id="multiFileList"></div>
+        </div>
+
+        <!-- Bottom Staged Dock Bar (inspired by Screenshot 3) -->
+        <div class="bottom-staged-dock" id="bottomConvertDock">
+          <!-- Dock Progress Bar: Top edge neon track during conversion -->
+          <div class="dock-progress-track" id="dockProgressTrack" style="opacity: 0;">
+            <div class="dock-progress-fill" id="dockProgressFill" style="width: 0%;"></div>
+          </div>
+
+          <div class="dock-left">
+            <div class="dock-staged-chips" id="dockStagedChips"></div>
+            <button type="button" class="btn-dock-add" id="btnDockAddMore" title="Add more files to convert">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+            </button>
+          </div>
+
+          <div class="dock-right">
+            <button type="button" class="btn-dock-back" id="btnClearUniversal">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+              <span>Back</span>
+            </button>
+
+            <button type="button" class="btn btn-primary btn-dock-convert" id="btnConvertUniversal">
+              <span id="btnConvertText">Convert</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab 2: Anything -> Markdown (File Converter) -->
+    <section class="tab-content" id="tab-markdown">
+      <div class="section-hero">
+        <h2>Anything &rarr; Markdown Studio</h2>
+        <p>Microsoft MarkItDown with Tesseract OCR &amp; Poppler PDF extraction. Converts PDF, Word, PowerPoint, Excel, HTML, CSV, Images, Audio, and ZIP files directly into clean Markdown.</p>
+      </div>
+
+      <div class="dropzone-wrapper">
+        <div class="dropzone" id="dropzoneMarkdown">
+          <div class="dropzone-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+          </div>
+          <h3>Drop documents, images, audio, or archives here</h3>
+          <p class="dropzone-hint">PDF, DOCX, PPTX, XLSX, EPUB, RTF, HTML, CSV, JSON, PNG, JPG, WAV, MP3, ZIP</p>
+          <button class="btn btn-secondary" type="button" id="btnBrowseMarkdown">Browse Files (Multiple)</button>
+          <input type="file" id="fileInputMarkdown" class="hidden-input" multiple />
+        </div>
+      </div>
+
+      <div class="markdown-options-bar">
+        <label class="md-option-toggle" title="Generate YAML header with title, date, word count, reading time">
+          <input type="checkbox" id="chkMarkdownFrontmatter" checked />
+          <span>Generate Studio Frontmatter (Title, Date, Reading Time, Word Count)</span>
+        </label>
+      </div>
+
+      <div class="action-bar-row">
+        <button class="btn btn-primary" id="btnConvertMarkdown" disabled>Convert to Markdown</button>
+        <button class="btn btn-secondary" id="btnConvertZip" disabled>Convert &amp; Download .ZIP</button>
+        <button class="btn btn-subtle" id="btnClearMarkdown" disabled>Clear All</button>
+        <span class="file-count-badge" id="markdownFileCount">0 files staged</span>
+      </div>
+
+      <div class="results-list" id="markdownResultsList"></div>
+    </section>
+
+    <!-- Tab 3: PDF Studio (Poppler Native Fast Engine) -->
+    <section class="tab-content" id="tab-pdf">
+      <div class="section-hero">
+        <h2>PDF Studio · Merge &amp; Split</h2>
+        <p>Ultra-fast multi-threaded PDF tools powered by Poppler. Merge unlimited PDFs into a single document or split page ranges in milliseconds.</p>
+      </div>
+
+      <div class="pdf-studio-grid">
+        <!-- PDF Merge Card -->
+        <div class="pdf-card">
+          <div class="pdf-card-header">
+            <div class="pdf-card-title-group">
+              <span class="pdf-badge pdf-badge-merge">MERGE</span>
+              <h3>Combine Multiple PDFs</h3>
+            </div>
+            <span class="pdf-hint">Poppler pdfunite</span>
+          </div>
+
+          <div class="pdf-dropzone" id="dropzonePdfMerge">
+            <div class="pdf-drop-icon">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="12" y1="12" x2="12" y2="18"></line>
+                <line x1="9" y1="15" x2="15" y2="15"></line>
+              </svg>
+            </div>
+            <span class="pdf-drop-title">Drop 2 or more PDFs to combine</span>
+            <span class="pdf-drop-sub">Click to select files from your Mac</span>
+            <input type="file" id="fileInputPdfMerge" class="hidden-input" accept=".pdf,application/pdf" multiple />
+          </div>
+
+          <div class="pdf-merge-list" id="pdfMergeList" style="display: none;"></div>
+
+          <div class="pdf-form-row">
+            <label for="pdfMergeOutName">Output Name:</label>
+            <input type="text" id="pdfMergeOutName" class="pdf-input" value="merged_document.pdf" />
+          </div>
+
+          <div class="pdf-actions-row">
+            <button type="button" class="btn btn-primary btn-block" id="btnTriggerPdfMerge" disabled>
+              Merge PDFs
+            </button>
+            <button type="button" class="btn btn-subtle" id="btnClearPdfMerge" style="display: none;">Clear</button>
+          </div>
+
+          <div class="pdf-result-banner" id="pdfMergeResult" style="display: none;">
+            <div class="result-info">
+              <span class="result-check">&#10003;</span>
+              <span id="pdfMergeResultText">PDFs merged successfully</span>
+            </div>
+            <a class="btn btn-success" id="btnDownloadPdfMerge" download="merged_document.pdf">Download PDF</a>
+          </div>
+        </div>
+
+        <!-- PDF Split & Extract Card -->
+        <div class="pdf-card">
+          <div class="pdf-card-header">
+            <div class="pdf-card-title-group">
+              <span class="pdf-badge pdf-badge-split">SPLIT</span>
+              <h3>Split &amp; Extract Pages</h3>
+            </div>
+            <span class="pdf-hint">Poppler pdfseparate</span>
+          </div>
+
+          <div class="pdf-dropzone" id="dropzonePdfSplit">
+            <div class="pdf-drop-icon">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="8" y1="13" x2="16" y2="13"></line>
+              </svg>
+            </div>
+            <span class="pdf-drop-title" id="pdfSplitDropTitle">Drop a PDF file to split</span>
+            <span class="pdf-drop-sub" id="pdfSplitDropSub">Extract single pages, page ranges, or every page into a ZIP</span>
+            <input type="file" id="fileInputPdfSplit" class="hidden-input" accept=".pdf,application/pdf" />
+          </div>
+
+          <div class="pdf-split-staged" id="pdfSplitStaged" style="display: none;">
+            <div class="pdf-staged-info">
+              <span class="pdf-badge">PDF</span>
+              <span class="pdf-staged-name" id="pdfSplitStagedName">document.pdf</span>
+              <span class="pdf-staged-meta" id="pdfSplitStagedMeta">0 KB</span>
+            </div>
+            <button type="button" class="btn-subtle-sm" id="btnRemovePdfSplit">&times; Remove</button>
+          </div>
+
+          <div class="pdf-form-row">
+            <label for="pdfSplitRange">Page Range:</label>
+            <input type="text" id="pdfSplitRange" class="pdf-input" value="all" placeholder="e.g. 1-3, 5, or 'all' for ZIP" />
+          </div>
+          <span class="pdf-field-hint">Use <code>all</code> to extract every page into a ZIP archive, or <code>1-5</code> to extract a range.</span>
+
+          <div class="pdf-actions-row" style="margin-top: 14px;">
+            <button type="button" class="btn btn-primary btn-block" id="btnTriggerPdfSplit" disabled>
+              Extract / Split PDF
+            </button>
+          </div>
+
+          <div class="pdf-result-banner" id="pdfSplitResult" style="display: none;">
+            <div class="result-info">
+              <span class="result-check">&#10003;</span>
+              <span id="pdfSplitResultText">Pages extracted successfully</span>
+            </div>
+            <a class="btn btn-success" id="btnDownloadPdfSplit" download="split_document.pdf">Download</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab 4: Standalone Media & Document Inspector -->
+    <section class="tab-content" id="tab-inspector">
+      <div class="section-hero">
+        <h2>Media &amp; Document Inspector</h2>
+        <p>Deep-probe any video, audio, image, PDF, or document for streams, codecs, resolution, and metadata &mdash; without staging it for conversion first.</p>
+      </div>
+
+      <div class="dropzone-wrapper">
+        <div class="dropzone" id="dropzoneInspector">
+          <div class="dropzone-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              <line x1="11" y1="8" x2="11" y2="14"></line>
+              <line x1="8" y1="11" x2="14" y2="11"></line>
+            </svg>
+          </div>
+          <h3>Drop a file here to inspect</h3>
+          <p class="dropzone-hint">Video, audio, image, PDF, or document &mdash; any supported format</p>
+          <button class="btn btn-secondary" type="button" id="btnBrowseInspector">Browse File</button>
+          <input type="file" id="fileInputInspector" class="hidden-input" />
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab 5: Batch Mode -->
+    <section class="tab-content" id="tab-batch">
+      <div class="section-hero">
+        <h2>Batch Folder Automation</h2>
+        <p>Drop files into <code>./input/</code> on your Mac and run one-click batch conversion directly into <code>./output/</code>.</p>
+      </div>
+
+      <div class="batch-grid">
+        <div class="batch-card">
+          <div class="batch-card-header">
+            <h3>Input Queue (<code>./input</code>)</h3>
+            <span class="badge" id="batchInputCount">0 files</span>
+          </div>
+          <div class="batch-file-list" id="batchInputList">
+            <p class="empty-state">No files staged in <code>input/</code></p>
+          </div>
+          <button class="btn btn-primary btn-block" id="btnTriggerBatch">
+            Run Batch Conversion on <code>./input</code>
+          </button>
+        </div>
+
+        <div class="batch-card">
+          <div class="batch-card-header">
+            <h3>Output Folder (<code>./output</code>)</h3>
+            <span class="badge badge-success" id="batchOutputCount">0 files</span>
+          </div>
+          <div class="batch-file-list" id="batchOutputList">
+            <p class="empty-state">No files converted yet</p>
+          </div>
+          <button class="btn btn-secondary btn-block" id="btnRefreshBatch">Refresh Folders</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab 6: Settings & Optimization Studio (Persistent) -->
+    <section class="tab-content" id="tab-settings">
+      <div class="settings-header-row">
+        <div class="section-hero">
+          <h2>Settings &amp; Studio Preferences</h2>
+          <p>Customize your default conversion formats, encoding parameters, and workflow automation. All settings persist automatically.</p>
+        </div>
+        <div class="settings-toast-indicator" id="settingsToast" style="opacity: 0;">
+          <span class="toast-dot"></span>
+          <span>Preferences saved</span>
+        </div>
+      </div>
+
+      <div class="settings-layout">
+        <!-- Settings Column 1: Conversion Defaults -->
+        <div class="settings-card">
+          <div class="settings-card-title">
+            <span class="card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <circle cx="12" cy="12" r="6"></circle>
+                <circle cx="12" cy="12" r="2"></circle>
+              </svg>
+            </span>
+            <div>
+              <h3>Default Target Formats</h3>
+              <p>Pre-selected formats when you drop files into the Universal Converter.</p>
+            </div>
+          </div>
+
+          <div class="settings-form-grid">
+            <div class="setting-item">
+              <label for="prefDefaultVideo">Default Video Target</label>
+              <select id="prefDefaultVideo" class="custom-select-sm">
+                <option value="mp4">MP4 (Universal)</option>
+                <option value="mkv">MKV (Matroska)</option>
+                <option value="webm">WEBM (Web-friendly)</option>
+                <option value="mov">MOV (Apple QuickTime)</option>
+                <option value="gif">GIF (Animated)</option>
+              </select>
+            </div>
+
+            <div class="setting-item">
+              <label for="prefDefaultAudio">Default Audio Target</label>
+              <select id="prefDefaultAudio" class="custom-select-sm">
+                <option value="mp3">MP3 (Universal)</option>
+                <option value="wav">WAV (Uncompressed)</option>
+                <option value="flac">FLAC (Lossless)</option>
+                <option value="aac">AAC (Apple Audio)</option>
+                <option value="m4a">M4A</option>
+                <option value="opus">OPUS (Modern voice/music)</option>
+              </select>
+            </div>
+
+            <div class="setting-item">
+              <label for="prefDefaultImage">Default Image Target</label>
+              <select id="prefDefaultImage" class="custom-select-sm">
+                <option value="webp">WEBP (Next-Gen Web)</option>
+                <option value="png">PNG (Lossless Transparency)</option>
+                <option value="jpg">JPG / JPEG (Standard)</option>
+                <option value="avif">AVIF (High Efficiency)</option>
+              </select>
+            </div>
+
+            <div class="setting-item">
+              <label for="prefDefaultDoc">Default Document Target</label>
+              <select id="prefDefaultDoc" class="custom-select-sm">
+                <option value="pdf">PDF (Print &amp; Document)</option>
+                <option value="docx">DOCX (Microsoft Word)</option>
+                <option value="md">MD (Markdown)</option>
+                <option value="txt">TXT (Plain Text)</option>
+                <option value="epub">EPUB (eBook)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Settings Column 2: Encoding Quality Defaults -->
+        <div class="settings-card">
+          <div class="settings-card-title">
+            <span class="card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="4" y1="21" x2="4" y2="14"></line>
+                <line x1="4" y1="10" x2="4" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12" y2="3"></line>
+                <line x1="20" y1="21" x2="20" y2="16"></line>
+                <line x1="20" y1="12" x2="20" y2="3"></line>
+                <line x1="1" y1="14" x2="7" y2="14"></line>
+                <line x1="9" y1="8" x2="15" y2="8"></line>
+                <line x1="17" y1="16" x2="23" y2="16"></line>
+              </svg>
+            </span>
+            <div>
+              <h3>Default Encoding &amp; Quality</h3>
+              <p>Baseline quality presets applied across all FFmpeg &amp; ImageMagick jobs.</p>
+            </div>
+          </div>
+
+          <div class="settings-form-grid">
+            <div class="setting-item">
+              <label for="prefDefaultCrf">Default Video Quality (CRF)</label>
+              <select id="prefDefaultCrf" class="custom-select-sm">
+                <option value="18">High Quality (CRF 18 · Near Lossless)</option>
+                <option value="22" selected>Balanced (CRF 22 · Recommended)</option>
+                <option value="26">Smaller File (CRF 26)</option>
+                <option value="28">Fast Web (CRF 28)</option>
+              </select>
+            </div>
+
+            <div class="setting-item">
+              <label for="prefDefaultCodec">Default Video Codec</label>
+              <select id="prefDefaultCodec" class="custom-select-sm">
+                <option value="" selected>Auto (Container Standard)</option>
+                <option value="libx264">H.264 (libx264)</option>
+                <option value="libx265">H.265 / HEVC (libx265)</option>
+                <option value="libvpx-vp9">VP9 (libvpx-vp9)</option>
+              </select>
+            </div>
+
+            <div class="setting-item">
+              <label for="prefDefaultAudioBitrate">Default Audio Bitrate</label>
+              <select id="prefDefaultAudioBitrate" class="custom-select-sm">
+                <option value="128k">128 kbps (Compact)</option>
+                <option value="192k" selected>192 kbps (High Fidelity)</option>
+                <option value="256k">256 kbps (Studio)</option>
+                <option value="320k">320 kbps (Maximum)</option>
+              </select>
+            </div>
+
+            <div class="setting-item">
+              <label for="prefDefaultImgQuality">Default Image Quality (%)</label>
+              <select id="prefDefaultImgQuality" class="custom-select-sm">
+                <option value="100">100% (Lossless)</option>
+                <option value="90">90% (High Quality)</option>
+                <option value="85" selected>85% (Optimized Web)</option>
+                <option value="70">70% (Compact)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Settings Column 3: Workflow Automation -->
+        <div class="settings-card">
+          <div class="settings-card-title">
+            <span class="card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polyline>
+              </svg>
+            </span>
+            <div>
+              <h3>Workflow Automation</h3>
+              <p>Streamline your conversions and eliminate repetitive manual actions.</p>
+            </div>
+          </div>
+
+          <div class="toggles-list">
+            <div class="toggle-row">
+              <div class="toggle-meta">
+                <span class="toggle-title">Instant Auto-Download</span>
+                <span class="toggle-desc">Automatically trigger file download as soon as conversion completes.</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="prefAutoDownload" />
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="toggle-row">
+              <div class="toggle-meta">
+                <span class="toggle-title">Auto-Copy Markdown to Clipboard</span>
+                <span class="toggle-desc">When converting a single document in Markdown Studio, copy directly to your clipboard.</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="prefAutoCopyMarkdown" />
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="toggle-row">
+              <div class="toggle-meta">
+                <span class="toggle-title">Preserve Metadata &amp; EXIF</span>
+                <span class="toggle-desc">Maintain timestamps, camera tags, and audio ID3 metadata in converted outputs.</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="prefPreserveMetadata" checked />
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="settings-actions-row">
+            <button type="button" class="btn btn-secondary" id="btnResetAllSettings">Reset All Preferences</button>
+            <span class="save-status-badge">Auto-saved in browser</span>
+          </div>
+        </div>
+
+        <!-- Settings Column 4: Hardware Telemetry & Accelerator -->
+        <div class="settings-card">
+          <div class="settings-card-title">
+            <span class="card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+                <rect x="9" y="9" width="6" height="6"></rect>
+                <line x1="9" y1="1" x2="9" y2="4"></line>
+                <line x1="15" y1="1" x2="15" y2="4"></line>
+                <line x1="9" y1="20" x2="9" y2="23"></line>
+                <line x1="15" y1="20" x2="15" y2="23"></line>
+                <line x1="20" y1="9" x2="23" y2="9"></line>
+                <line x1="20" y1="14" x2="23" y2="14"></line>
+                <line x1="1" y1="9" x2="4" y2="9"></line>
+                <line x1="1" y1="14" x2="4" y2="14"></line>
+              </svg>
+            </span>
+            <div>
+              <h3>Hardware Telemetry</h3>
+              <p>Real-time hardware status and GPU acceleration parameters.</p>
+            </div>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <span class="stat-label">Processor</span>
+              <span class="stat-value" id="statHost">Detecting&hellip;</span>
+              <span class="stat-sub">Architecture: ARM64 / aarch64</span>
+            </div>
+
+            <div class="stat-card">
+              <span class="stat-label">Active CPU Threads</span>
+              <span class="stat-value" id="statCores">Detecting&hellip;</span>
+              <span class="stat-sub">Multi-threaded FFmpeg (-threads 0)</span>
+            </div>
+
+            <div class="stat-card">
+              <span class="stat-label">Memory Bandwidth &amp; RAM</span>
+              <span class="stat-value" id="statRam">Unified Memory</span>
+              <span class="stat-sub">2GB Shared Memory Buffer</span>
+            </div>
+
+            <div class="stat-card">
+              <span class="stat-label">Hardware Acceleration</span>
+              <span class="stat-value text-emerald">Active</span>
+              <span class="stat-sub">ARM NEON + Browser Metal GPU</span>
+            </div>
+          </div>
+
+          <div class="instructions-box">
+            <h4>Native macOS VideoToolbox GPU Acceleration</h4>
+            <p>
+              For 4K/8K jobs where you want 100% native Apple VideoToolbox GPU encoding directly on macOS without container virtualization overhead:
+            </p>
+            <div class="code-box-row">
+              <code id="videoToolboxCommand">./scripts/mac-gpu-accelerator.sh input.mov output.mp4</code>
+              <button type="button" class="btn-copy-code" id="btnCopyVtb" title="Copy command">Copy</button>
+            </div>
+            <p class="note">Uses <code>h264_videotoolbox</code> and <code>hevc_videotoolbox</code> from your host Homebrew FFmpeg.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Markdown Preview Modal -->
+  <div class="modal-backdrop" id="markdownModal" style="display: none;">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title-row">
+          <h3 id="modalTitle">Document Preview</h3>
+          <div class="modal-view-toggles">
+            <button class="toggle-btn active" id="btnToggleRendered">Formatted Preview</button>
+            <button class="toggle-btn" id="btnToggleRaw">Raw Markdown</button>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="btnCloseModal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="markdown-preview-rendered" id="modalRenderedContent"></div>
+        <pre class="markdown-preview-raw" id="modalRawContent" style="display: none;"></pre>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btnCopyMarkdown">
+          <span id="copyText">Copy Markdown</span>
+        </button>
+        <button class="btn btn-secondary" id="btnExportHtml">Export Clean HTML</button>
+        <button class="btn btn-primary" id="btnDownloadModal">Download .md</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Media Telemetry & Stream Inspector Modal -->
+  <div class="modal-backdrop" id="mediaInspectorModal" style="display: none;">
+    <div class="modal-dialog modal-inspector">
+      <div class="modal-header">
+        <div class="modal-title-row">
+          <div class="inspector-badge" id="inspectorCategoryBadge">PROBE</div>
+          <h3 id="inspectorModalTitle">Media Stream Inspector</h3>
+        </div>
+        <button class="modal-close-btn" id="btnCloseInspector">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="inspector-loading" id="inspectorLoading" style="display: none;">
+          <span class="pulse-dot"></span>
+          <span>Probing hardware streams &amp; telemetry...</span>
+        </div>
+
+        <div class="inspector-content" id="inspectorContent">
+          <!-- Quick Stat Tiles -->
+          <div class="inspector-stats-grid" id="inspectorStatsGrid"></div>
+
+          <!-- Streams & Codecs Section -->
+          <div class="inspector-section-title" id="inspectorSectionTitle">Streams &amp; Codec Breakdown</div>
+          <div class="inspector-streams-list" id="inspectorStreamsList"></div>
+
+          <!-- Raw Metadata JSON Details -->
+          <details class="inspector-raw-details">
+            <summary>View Raw JSON Telemetry Tree</summary>
+            <pre class="inspector-raw-code" id="inspectorRawCode"></pre>
+          </details>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btnCopyInspectorJson">Copy Telemetry JSON</button>
+        <button class="btn btn-primary" id="btnCloseInspectorFooter">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="app-footer">
+    <p>Better VERT · Universal Studio · Local-First, Zero Cloud Uploads</p>
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

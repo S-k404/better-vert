@@ -1,0 +1,10 @@
+__pycache__
+*.py[cod]
+*$py.class
+.git
+.gitignore
+.DS_Store
+input/*
+!input/.gitkeep
+output/*
+!output/.gitkeep

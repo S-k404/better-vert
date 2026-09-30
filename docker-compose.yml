@@ -1,0 +1,37 @@
+services:
+  better-vert:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # On Linux hosts set these to your own id -u / id -g so the non-root
+        # container user can write to the mounted ./output and ./input folders.
+        VERT_UID: "${VERT_UID:-10001}"
+        VERT_GID: "${VERT_GID:-10001}"
+    container_name: better-vert
+    ports:
+      # Bound to loopback: the API has no authentication, so it must not be
+      # reachable from other machines on the network.
+      - "127.0.0.1:${PORT:-8394}:8000"
+    volumes:
+      # Converted files (.md, videos, audio, images) land here on your Mac
+      - ./output:/data/output
+      # Drop files here for CLI / automated batch conversion
+      - ./input:/data/input
+      # Live development mounts
+      - ./backend:/app/backend
+      - ./frontend:/app/frontend
+    environment:
+      - INPUT_DIR=/data/input
+      - OUTPUT_DIR=/data/output
+      - PORT=8000
+      # Comma-separated browser origins allowed to call the API.
+      - ALLOWED_ORIGINS=http://localhost:${PORT:-8394},http://127.0.0.1:${PORT:-8394}
+      # Per-file upload ceiling in MB.
+      - MAX_UPLOAD_MB=${MAX_UPLOAD_MB:-2048}
+    # M5 Max Resource Tuning: 2GB shared memory buffer for multi-threaded FFmpeg / MarkItDown
+    shm_size: "2gb"
+    restart: unless-stopped
+    # Containers should not be able to gain privileges beyond what they start with.
+    security_opt:
+      - no-new-privileges:true

@@ -1,0 +1,3 @@
+## Batch Test Document
+
+Testing the batch conversion pipeline for Better VERT.
