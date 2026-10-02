@@ -21,6 +21,14 @@ Everything runs **100% locally** in Docker on your Mac — no files ever leave y
 
 ---
 
+## Requirements
+
+- macOS on Apple Silicon (built and tuned for M-series; runs on other
+  architectures too, just without the Apple-specific acceleration paths)
+- [Docker Desktop](https://docs.docker.com/get-docker/) with Compose v2
+- `curl` (required); `jq` and `unzip` are optional but improve `vert status`/`vert md` output
+- For `./scripts/mac-gpu-accelerator.sh` only: a native macOS `ffmpeg` with VideoToolbox support (e.g. via Homebrew) — the Docker container itself doesn't need this
+
 ## 🚀 Quick Start
 
 ### Option A — one-line install (recommended)
@@ -93,50 +101,32 @@ vert convert clip.mov --to mp4 --crf 20 --resolution 1920x1080
 vert md report.pdf slides.pptx -o ./notes
 vert inspect movie.mkv          # codec / stream / metadata telemetry
 vert batch                      # convert everything in ./input
-vert formats video              # what you can convert to
+vert formats video               # what you can convert to
 vert status                     # health + hardware acceleration telemetry
 vert open                       # open the web UI
 vert down
 ```
 
-| Command | What it does |
-|---|---|
-| `vert` | Interactive picker (arrow keys + progress bar) |
-| `vert up` / `down` / `logs` | Container lifecycle |
-| `vert convert <file> --to <fmt>` | Universal conversion with encoding flags |
-| `vert md <file...>` | Anything → Markdown, with OCR and figure extraction |
-| `vert inspect <file>` | Stream, codec and metadata telemetry |
-| `vert batch` | Convert everything in `./input` → `./output` |
-| `vert formats [category]` | Supported formats per category |
-| `vert ls` | What's currently in `./input` and `./output` |
-| `vert status` | Health check and host telemetry |
-
-Conversion flags: `--crf`, `--resolution`, `--codec`, `--audio-bitrate`, `--fps`,
-`--quality`, `--trim-start`, `--trim-duration`, `--speed`, `--dpi`, `--loudnorm`.
-Run `vert help` for the full list.
-
-`VERT_PORT` overrides the API port; `NO_COLOR` disables coloured output.
+Full command and flag reference: **[docs/CLI_REFERENCE.md](docs/CLI_REFERENCE.md)**.
 
 ---
 
 ## 🛠 Features & Workflows
 
 ### 1. Universal 250+ Format Converter
-Convert between video, audio, image, and document formats:
-- **Video**: MP4, MKV, WEBM, MOV, AVI, GIF, WMV, FLV, TS, etc. (uses all 18 CPU cores with `-threads 0` and ARM NEON SIMD).
-- **Audio**: MP3, WAV, AAC, FLAC, M4A, OGG, OPUS.
-- **Images**: PNG, JPG, WEBP, AVIF, GIF, TIFF, BMP, SVG (via ImageMagick).
-- **Documents**: PDF, DOCX, HTML, EPUB, TXT, RTF.
+Convert between video, audio, image, and document formats using all 18 CPU
+cores (`-threads 0`, ARM NEON SIMD) for video, ImageMagick for images, and
+Pandoc/Poppler for documents. Full per-category format tables and the tuned
+FFmpeg encoder presets behind each target: **[docs/FORMATS.md](docs/FORMATS.md)**.
 
 ### 2. Anything &rarr; Markdown Studio (Incorporating File Converter)
-Drag & drop any file to convert into structured Markdown:
-- **Office**: Word (DOCX), PowerPoint (PPTX), Excel (XLSX, XLS).
-- **Documents**: PDF (with text & table layer extraction via Poppler and OCR fallbacks), EPUB, RTF, ODT.
-- **Web & Data**: HTML, CSV, TSV, JSON, XML.
-- **Images & Audio**: Photos with EXIF extraction & Tesseract OCR; Audio with speech transcription & metadata.
-- **Archives**: ZIP (converts nested files inside).
-- **Rich Preview**: Live rendered Markdown modal (toggle between formatted HTML view and raw markdown), instant copy button, individual `.md` downloads, or **"Convert & Download .ZIP"**.
-- Converted `.md` files are also saved directly to your Mac in `./output/`.
+Drag & drop Office documents, PDFs (with text & table layer extraction via
+Poppler and OCR fallbacks), web/data formats, images, audio, or zipped
+archives, and get back structured Markdown — with EXIF/metadata extraction,
+Tesseract OCR, and speech transcription where relevant. A live rendered
+preview (formatted HTML or raw markdown), instant copy, and either individual
+`.md` downloads or **"Convert & Download .ZIP"**. Converted `.md` files are
+also saved directly to your Mac in `./output/`.
 
 ### 3. Batch Folder Automation (CLI & UI)
 Drop any files into `./input/` on your Mac, then run:
@@ -184,6 +174,22 @@ front of it and set `ALLOWED_ORIGINS` accordingly.
 
 `./output/` and `./input/` are git-ignored, since they hold your actual documents.
 
+Full write-up, including why each control is there: **[docs/ARCHITECTURE.md#security-model](docs/ARCHITECTURE.md#security-model)**.
+
+---
+
+## 🩹 Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| `install.sh` dies on "Docker daemon isn't running" | Start Docker Desktop, then re-run `./install.sh` |
+| `vert` says "is not responding on http://127.0.0.1:8394" | The container isn't up — run `vert up` (or `docker compose up -d`), then `vert logs` if it still fails |
+| Build takes a long time on first run | Expected — the image pulls `ffmpeg`, `tesseract`, `poppler`, `pandoc` and friends; subsequent builds are cached |
+| Container can't write to `./output`/`./input` on Linux | Set `VERT_UID`/`VERT_GID` in `.env` to your host `id -u`/`id -g` (macOS/Windows Docker Desktop doesn't need this; `install.sh` sets it automatically on Linux) |
+| A conversion fails with a generic error | Run `vert logs` (or `docker compose logs better-vert`) — the real exception is logged server-side; the HTTP response intentionally doesn't leak internal paths |
+| Upload rejected as too large | Raise `MAX_UPLOAD_MB` in `.env` and restart the stack |
+| `vert formats` only shows the static list | The API isn't reachable — it falls back to a built-in list when the container is down; `vert up` first for the live catalogue |
+
 ---
 
 ## 📂 Project Structure
@@ -205,10 +211,28 @@ Better-vertsh/
 │   ├── vert                     # Command line client (interactive + scriptable)
 │   ├── convert.sh               # CLI batch converter
 │   └── mac-gpu-accelerator.sh   # Host Apple VideoToolbox GPU encoding helper
+├── docs/                        # Deeper reference docs (formats, CLI, architecture)
 ├── install.sh                   # Prerequisite check, build, start, PATH setup
 ├── convert.sh                   # Root shortcut for scripts/convert.sh
 ├── .env.example                 # Copy to .env to override port / upload limit
 ├── Dockerfile                   # Multi-stage ARM64 build (Python 3.12, FFmpeg, Tesseract, Poppler)
-├── docker-compose.yml           # Compose configuration tuned for Apple Silicon
+├── docker-compose.yml            # Compose configuration tuned for Apple Silicon
 └── README.md
 ```
+
+## Documentation
+
+- **[docs/FORMATS.md](docs/FORMATS.md)** — full format tables per category, cross-medium routes, and the Markdown conversion matrix
+- **[docs/CLI_REFERENCE.md](docs/CLI_REFERENCE.md)** — every `vert` command and conversion flag
+- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — component layout, request flow, hardware acceleration, and the security model
+
+## Contributing
+
+This is a personal, single-purpose build tuned for one machine class (Apple
+Silicon M-series under Docker). Issues and PRs that fix a real bug or extend
+format support are welcome — open an issue describing the input/output
+formats and host OS before sending a PR.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
