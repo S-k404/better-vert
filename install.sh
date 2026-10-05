@@ -13,6 +13,10 @@ set -euo pipefail
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$PROJECT_DIR"
 
+# shellcheck source=scripts/lib/platform.sh
+. "$PROJECT_DIR/scripts/lib/platform.sh"
+HOST_OS="$(host_os)"     # macos | linux | wsl | windows | other
+
 if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
   R=$'\033[0m'; B=$'\033[1m'; D=$'\033[2m'
   CY=$'\033[36m'; GR=$'\033[32m'; YL=$'\033[33m'; RD=$'\033[31m'; MG=$'\033[35m'
@@ -49,9 +53,9 @@ command -v docker >/dev/null 2>&1 \
   || die "Docker is not installed. Get Docker Desktop: https://docs.docker.com/get-docker/"
 ok "docker $(docker --version | awk '{print $3}' | tr -d ,)"
 
-docker compose version >/dev/null 2>&1 \
-  || die "'docker compose' is unavailable. Update Docker Desktop, or install the Compose v2 plugin."
-ok "docker compose $(docker compose version --short 2>/dev/null || echo present)"
+compose_available \
+  || die "Docker Compose is unavailable. Update Docker Desktop, or install the Compose plugin (docker-compose-plugin)."
+ok "docker compose $(compose version --short 2>/dev/null || echo present)"
 
 command -v curl >/dev/null 2>&1 || die "curl is required but not installed."
 ok "curl"
@@ -62,7 +66,7 @@ for opt in unzip jq; do
 done
 
 if [ "$DO_START" -eq 1 ] && ! docker info >/dev/null 2>&1; then
-  die "The Docker daemon isn't running. Start Docker Desktop, then re-run ./install.sh"
+  die "The Docker daemon isn't running. Start Docker Desktop (macOS/Windows) or the service (Linux: sudo systemctl start docker), then re-run ./install.sh"
 fi
 
 # --- 2. Configuration -------------------------------------------------------
@@ -76,9 +80,19 @@ else
 fi
 
 # On Linux, bind-mount permissions are enforced literally, so the container user
-# has to match the host user or it cannot write to ./output.
-if [ "$(uname -s)" = "Linux" ]; then
-  if ! grep -q '^VERT_UID=' .env 2>/dev/null; then
+# has to match the host user or it cannot write to ./output. That includes WSL2,
+# where the project lives on a real Linux filesystem.
+if [ "$HOST_OS" = "linux" ] || [ "$HOST_OS" = "wsl" ]; then
+  if [ "$(id -u)" -eq 0 ]; then
+    # The image cannot create a second account with UID 0, so a root host keeps the
+    # default container user and hands it the two data folders instead.
+    mkdir -p input output
+    if chown 10001:10001 input output 2>/dev/null; then
+      ok "running as root — gave ./input and ./output to the container user (10001)"
+    else
+      warn "running as root but could not chown ./input and ./output — run: chown 10001:10001 input output"
+    fi
+  elif ! grep -q '^VERT_UID=' .env 2>/dev/null; then
     printf '\nVERT_UID=%s\nVERT_GID=%s\n' "$(id -u)" "$(id -g)" >> .env
     ok "pinned VERT_UID/VERT_GID to $(id -u):$(id -g) for bind-mount writes"
   fi
@@ -86,26 +100,42 @@ else
   ok "$(uname -s) host — Docker Desktop maps bind-mount ownership for you"
 fi
 
+# SELinux (Fedora, RHEL, Rocky, ...) blocks containers from bind mounts that
+# carry no container label, which shows up as "permission denied" on ./output.
+# `:z` relabels the project folders; Docker Desktop hosts never need it.
+if command -v getenforce >/dev/null 2>&1 && [ "$(getenforce 2>/dev/null)" = "Enforcing" ]; then
+  if ! grep -q '^VERT_MOUNT_OPTS=' .env 2>/dev/null; then
+    printf '\nVERT_MOUNT_OPTS=:z\n' >> .env
+    ok "SELinux is enforcing — set VERT_MOUNT_OPTS=:z so bind mounts are relabelled"
+  fi
+fi
+
+# On WSL2, a checkout under /mnt/c lives on the Windows filesystem: bind mounts
+# there are many times slower and don't honour Linux permissions.
+case "$HOST_OS:$PROJECT_DIR" in
+  wsl:/mnt/*) warn "this folder is on the Windows drive ($PROJECT_DIR) — for speed, clone into your WSL home (~/) instead" ;;
+esac
+
 mkdir -p input output
-chmod +x scripts/vert scripts/convert.sh scripts/mac-gpu-accelerator.sh convert.sh 2>/dev/null || true
+chmod +x scripts/vert scripts/convert.sh scripts/gpu-accelerator.sh scripts/mac-gpu-accelerator.sh convert.sh 2>/dev/null || true
 ok "input/ and output/ ready, scripts marked executable"
 
-PORT="$(grep -E '^PORT=' .env | tail -1 | cut -d= -f2- | tr -d '"'"'"' ' || true)"
+PORT="$(grep -E '^PORT=' .env | tail -1 | cut -d= -f2- | tr -d '"'"'"' \r' || true)"
 PORT="${PORT:-8394}"
 
 # --- 3. Build & start -------------------------------------------------------
 if [ "$DO_START" -eq 1 ]; then
   step "Building the image ${D}(first run pulls ffmpeg, tesseract, poppler, pandoc — this takes a few minutes)${R}"
-  docker compose build
+  compose build
   ok "image built"
 
   step "Starting the stack"
-  docker compose up -d
+  compose up -d
   printf '%s  …%s waiting for the API on port %s' "$D" "$R" "$PORT"
   i=0
   until curl -fsS --max-time 3 "http://127.0.0.1:${PORT}/api/version" >/dev/null 2>&1; do
     i=$((i+1))
-    [ "$i" -gt 90 ] && { printf '\n'; die "Timed out. Check logs with: docker compose logs better-vert"; }
+    [ "$i" -gt 90 ] && { printf '\n'; die "Timed out. Check logs with: vert logs  (or: docker compose logs better-vert)"; }
     printf '.'
     sleep 1
   done
@@ -135,8 +165,19 @@ if [ "$LINK_MODE" = "yes" ]; then
     fi
   fi
   mkdir -p "$PREFIX"
-  if ln -sf "$PROJECT_DIR/scripts/vert" "$PREFIX/vert" 2>/dev/null; then
-    ok "linked $PREFIX/vert -> scripts/vert"
+  if [ "$HOST_OS" = "windows" ]; then
+    # Git Bash/MSYS2 `ln -s` silently makes a copy unless symlinks are enabled,
+    # which would leave `vert` pointing at a stale script. A one-line launcher
+    # always runs the in-repo script instead.
+    LINKED=0
+    printf '#!/usr/bin/env bash\nexec "%s/scripts/vert" "$@"\n' "$PROJECT_DIR" > "$PREFIX/vert" 2>/dev/null \
+      && chmod +x "$PREFIX/vert" 2>/dev/null && LINKED=1
+  else
+    LINKED=0
+    ln -sf "$PROJECT_DIR/scripts/vert" "$PREFIX/vert" 2>/dev/null && LINKED=1
+  fi
+  if [ "$LINKED" -eq 1 ]; then
+    ok "installed $PREFIX/vert -> scripts/vert"
     case ":$PATH:" in
       *":$PREFIX:"*) : ;;
       *) warn "$PREFIX is not on your PATH. Add this to your shell profile:"

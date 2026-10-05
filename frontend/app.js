@@ -404,7 +404,62 @@ document.addEventListener("DOMContentLoaded", () => {
   // ---------------------------------------------------------------------------
   // 3. Telemetry & Hardware Info
   // ---------------------------------------------------------------------------
+  // The container is always Linux, so it cannot tell a Mac from a Windows PC or a
+  // Linux box. The stack only listens on loopback, so the browser's own OS is the
+  // Docker host's OS; use it to describe the machine and to pick the right GPU tip.
+  function detectClientOS() {
+    const nav = typeof navigator !== "undefined" ? navigator : {};
+    const hint = (nav.userAgentData && nav.userAgentData.platform) || nav.platform || nav.userAgent || "";
+    if (/mac/i.test(hint)) return "macOS";
+    if (/win/i.test(hint)) return "Windows";
+    if (/linux|x11|cros/i.test(hint)) return "Linux";
+    return "";
+  }
+
+  function describeHost(info) {
+    const arch = (info && info.architecture) || "";
+    const isArm = /^(arm64|aarch64)$/i.test(arch);
+    const archName = isArm ? "ARM64" : /^(x86_64|amd64)$/i.test(arch) ? "x86-64" : arch;
+    const os = detectClientOS();
+    let label = (info && info.host) || "Unknown host";
+    if (isArm && os === "macOS") label = "Apple Silicon (macOS)";
+    else if (archName && os) label = `${archName} (${os})`;
+    const simd = info && info.acceleration && info.acceleration.simd;
+    return { label, archName, simd };
+  }
+
+  const HOST_GPU_HINTS = {
+    macOS: {
+      title: "Native macOS VideoToolbox GPU Acceleration",
+      intro: "For 4K/8K jobs where you want native Apple VideoToolbox GPU encoding directly on macOS, without container virtualization overhead:",
+      note: "Uses hevc_videotoolbox / h264_videotoolbox from your host Homebrew FFmpeg (brew install ffmpeg).",
+    },
+    Windows: {
+      title: "Native GPU Acceleration (NVIDIA / Intel / AMD)",
+      intro: "Docker Desktop cannot reach your GPU, so for 4K/8K jobs run the helper on the host instead. Use Git Bash or a WSL2 shell:",
+      note: "Uses NVENC, Quick Sync or AMF from the FFmpeg on your PATH (winget install Gyan.FFmpeg).",
+    },
+    Linux: {
+      title: "Native GPU Acceleration (NVIDIA / Intel / AMD)",
+      intro: "For 4K/8K jobs where you want hardware GPU encoding directly on the host, outside the container:",
+      note: "Uses NVENC, Quick Sync or VAAPI from the FFmpeg on your PATH. Falls back to software if no GPU encoder works.",
+    },
+  };
+
+  function applyHostGpuHints() {
+    const hint = HOST_GPU_HINTS[detectClientOS()];
+    if (!hint) return;
+    const set = (id, text) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = text;
+    };
+    set("hostGpuTitle", hint.title);
+    set("hostGpuIntro", hint.intro);
+    set("hostGpuNote", hint.note);
+  }
+
   async function fetchTelemetry() {
+    applyHostGpuHints();
     try {
       const [sysRes, catRes] = await Promise.all([
         fetch("/api/system-info").catch(() => null),
@@ -414,17 +469,24 @@ document.addEventListener("DOMContentLoaded", () => {
       if (sysRes && sysRes.ok) {
         systemInfo = await sysRes.json();
 
+        const hostInfo = describeHost(systemInfo);
+        const simdSuffix = hostInfo.simd ? ` · ${hostInfo.simd}` : "";
+
         // Header telemetry pill
         const pillText = document.getElementById("telemetryText");
         if (pillText && systemInfo.cores_logical) {
-          pillText.textContent = `${systemInfo.host} · ${systemInfo.cores_logical} Cores Active · ARM NEON`;
+          pillText.textContent = `${hostInfo.label} · ${systemInfo.cores_logical} Cores Active${simdSuffix}`;
         }
 
         // Settings tab telemetry cards
         const statHost = document.getElementById("statHost");
         const statCores = document.getElementById("statCores");
         const statRam = document.getElementById("statRam");
-        if (statHost) statHost.textContent = systemInfo.host || "Unknown host";
+        const statArch = document.getElementById("statArch");
+        const statAccel = document.getElementById("statAccel");
+        if (statHost) statHost.textContent = hostInfo.label;
+        if (statArch) statArch.textContent = `Architecture: ${systemInfo.architecture || "unknown"}`;
+        if (statAccel) statAccel.textContent = hostInfo.simd ? `${hostInfo.simd} SIMD + browser GPU` : "Browser GPU";
         if (statCores) statCores.textContent = `${systemInfo.cores_logical} CPU Threads`;
         if (statRam) statRam.textContent = `${systemInfo.memory_available_gb} GB Free / ${systemInfo.memory_total_gb} GB`;
 
@@ -435,7 +497,7 @@ document.addEventListener("DOMContentLoaded", () => {
           heroBadgeCores.textContent = `${systemInfo.cores_logical} Cores Active`;
         }
         if (termHwTag && systemInfo.cores_logical) {
-          termHwTag.textContent = `${systemInfo.cores_logical} CORES · NEON SIMD`;
+          termHwTag.textContent = `${systemInfo.cores_logical} CORES${hostInfo.simd ? ` · ${hostInfo.simd} SIMD` : ""}`;
         }
       }
 
@@ -1813,8 +1875,9 @@ document.addEventListener("DOMContentLoaded", () => {
       TerminalConsole.open();
       TerminalConsole.clear();
       TerminalConsole.setStatus("running", "RUNNING · 15%");
-      TerminalConsole.setProgress(15, `Initializing ${systemInfo?.cores_logical || 18} cores (NEON SIMD)...`);
-      TerminalConsole.appendLog(`[INIT] Conversion task initiated with ${systemInfo?.cores_logical || 18} hardware threads`);
+      const simdName = systemInfo?.acceleration?.simd;
+      TerminalConsole.setProgress(15, `Initializing ${systemInfo?.cores_logical || "all available"} cores${simdName ? ` (${simdName} SIMD)` : ""}...`);
+      TerminalConsole.appendLog(`[INIT] Conversion task initiated with ${systemInfo?.cores_logical || "all available"} hardware threads`);
       universalResult.style.display = "none";
       if (routeBadgeContainer) routeBadgeContainer.style.display = "none";
       if (mediaPreviewContainer) mediaPreviewContainer.style.display = "none";

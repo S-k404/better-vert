@@ -1,37 +1,48 @@
 # Better VERT · Apple M5 Max Studio Edition
 
-A customized, privacy-focused, high-performance universal conversion suite built specifically for **Apple Silicon M-Series (Apple M5 Max with 18 CPU Cores)**.
+A customized, privacy-focused, high-performance universal conversion suite. It is tuned for **Apple Silicon (M-series)** but runs the same way on **macOS, Linux and Windows**, on both **x86-64 and ARM64**.
 
 It merges the universal format capabilities of [VERT](https://github.com/VERT-sh/VERT) with the document-parsing intelligence of [Microsoft MarkItDown](https://github.com/microsoft/markitdown) (with Tesseract OCR, Poppler PDF text/table extraction, and batch automation).
 
-Everything runs **100% locally** in Docker on your Mac — no files ever leave your machine.
+Everything runs **100% locally** in Docker on your own machine — no files ever leave your machine.
 
 ---
 
-## ⚡ What Makes It "Better VERT" for M5 Max Mac?
+## ⚡ What Makes It "Better VERT"?
 
-| Feature | Upstream VERT | File Converter | **Better VERT (M5 Max Edition)** |
+| Feature | Upstream VERT | File Converter | **Better VERT (Studio Edition)** |
 |---|---|---|---|
-| **Video Conversion** | Offloaded to external cloud (`vertd.vert.sh`) or separate Rust daemon | Not supported | **Local multi-threaded FFmpeg** (18-core M5 Max auto-threaded) |
+| **Video Conversion** | Offloaded to external cloud (`vertd.vert.sh`) or separate Rust daemon | Not supported | **Local multi-threaded FFmpeg** (uses every core you give it) |
 | **Anything &rarr; Markdown** | Limited (pandoc wasm) | Yes (`markitdown`) | **Fully integrated** (MarkItDown + Tesseract OCR + Poppler + live preview) |
-| **Hardware Acceleration** | None by default | CPU only | **ARM NEON SIMD + 18-core threads + Browser Metal GPU + Host VideoToolbox Bridge** |
+| **Hardware Acceleration** | None by default | CPU only | **SIMD (NEON / AVX) + all-core threads + browser GPU + a host GPU bridge** (VideoToolbox, NVENC, Quick Sync, VAAPI, AMF) |
 | **Upload Limits** | 10MB limit in Nginx | Unlimited | **2 GB per file by default** (`MAX_UPLOAD_MB`, raise as needed) |
 | **Batch Processing** | Manual one-by-one | `./convert.sh` | **Both Web UI Batch Monitor & `./convert.sh` CLI** |
-| **Docker Stack** | Complex multi-repo setup | Single container | **Single-command Compose stack tuned for M5 Max** (`8394:8000`) |
+| **Docker Stack** | Complex multi-repo setup | Single container | **Single-command Compose stack** (`8394:8000`) |
 
 ---
 
 ## Requirements
 
-- macOS on Apple Silicon (built and tuned for M-series; runs on other
-  architectures too, just without the Apple-specific acceleration paths)
-- [Docker Desktop](https://docs.docker.com/get-docker/) with Compose v2
-- `curl` (required); `jq` and `unzip` are optional but improve `vert status`/`vert md` output
-- For `./scripts/mac-gpu-accelerator.sh` only: a native macOS `ffmpeg` with VideoToolbox support (e.g. via Homebrew) — the Docker container itself doesn't need this
+Better VERT runs in Docker, so any machine that runs Docker runs it. The image
+is multi-architecture (`python:3.12-slim` plus distro packages), so there is
+nothing to select for x86-64 versus ARM64.
+
+| Host | Docker | `vert` CLI + `install.sh` | Notes |
+|---|---|---|---|
+| **macOS** (Apple Silicon or Intel) | Docker Desktop | Terminal (bash 3.2+ is fine) | Everything works. Host GPU via VideoToolbox |
+| **Linux** (x86-64 or ARM64) | Docker Engine + Compose plugin (or `docker-compose` v1) | Any shell with bash | `install.sh` pins `VERT_UID`/`VERT_GID`, handles root and SELinux hosts |
+| **Windows 10/11** | Docker Desktop (WSL2 backend) | **WSL2** (recommended); Git Bash is best effort | The web UI needs no shell at all, see [Option B](#option-b--plain-docker-compose) |
+
+- `curl` (required by the CLI); `jq` and `unzip` are optional but improve `vert status`/`vert md` output
+- Optional, for the host GPU helper `./scripts/gpu-accelerator.sh` only: a native `ffmpeg` on the host (`brew install ffmpeg`, `winget install Gyan.FFmpeg`, or your distro's package). The Docker container itself doesn't need this
 
 ## 🚀 Quick Start
 
 ### Option A — one-line install (recommended)
+
+Run this in a macOS/Linux terminal, or in **WSL2** on Windows (Git Bash is best effort).
+On Windows, clone inside your WSL home (`~/`), not under `/mnt/c`: bind mounts
+on the Windows drive are much slower.
 
 ```bash
 git clone https://github.com/S-k404/better-vert.git
@@ -56,6 +67,10 @@ Then open **[http://localhost:8394](http://localhost:8394)**.
 cp .env.example .env   # optional: change the host port
 docker compose up -d --build
 ```
+
+On Windows PowerShell, use `Copy-Item .env.example .env` for the first line.
+On a Linux host, also set `VERT_UID`/`VERT_GID` in `.env` to `id -u`/`id -g` (see
+[Troubleshooting](#-troubleshooting)).
 
 To stop: `docker compose down` (or `vert down`).
 
@@ -114,8 +129,8 @@ Full command and flag reference: **[docs/CLI_REFERENCE.md](docs/CLI_REFERENCE.md
 ## 🛠 Features & Workflows
 
 ### 1. Universal 250+ Format Converter
-Convert between video, audio, image, and document formats using all 18 CPU
-cores (`-threads 0`, ARM NEON SIMD) for video, ImageMagick for images, and
+Convert between video, audio, image, and document formats using every available CPU
+core (`-threads 0`, with NEON or AVX SIMD) for video, ImageMagick for images, and
 Pandoc/Poppler for documents. Full per-category format tables and the tuned
 FFmpeg encoder presets behind each target: **[docs/FORMATS.md](docs/FORMATS.md)**.
 
@@ -126,10 +141,10 @@ archives, and get back structured Markdown — with EXIF/metadata extraction,
 Tesseract OCR, and speech transcription where relevant. A live rendered
 preview (formatted HTML or raw markdown), instant copy, and either individual
 `.md` downloads or **"Convert & Download .ZIP"**. Converted `.md` files are
-also saved directly to your Mac in `./output/`.
+also saved directly to `./output/` on your machine.
 
 ### 3. Batch Folder Automation (CLI & UI)
-Drop any files into `./input/` on your Mac, then run:
+Drop any files into `./input/` on your machine, then run:
 
 ```bash
 ./convert.sh
@@ -143,14 +158,27 @@ Or pass any folder path to convert it automatically:
 
 Converted files immediately land in `./output/`.
 
-### 4. Native macOS VideoToolbox GPU Acceleration
-For massive 4K/8K video conversions where you want dedicated Apple VideoToolbox GPU hardware encoders:
+### 4. Native Host GPU Acceleration
+Docker can't reach the GPU on macOS or Windows, so for massive 4K/8K video
+conversions run the helper directly on the host. It picks the hardware encoder
+your machine can really use, test-encodes it first, and falls back to software
+x264/x265 if none works:
 
 ```bash
-./scripts/mac-gpu-accelerator.sh input.mov output.mp4 hevc
+./scripts/gpu-accelerator.sh input.mov output.mp4 hevc
 ```
 
-Supports `hevc` (`hevc_videotoolbox`), `h264` (`h264_videotoolbox`), and `prores` (`prores_videotoolbox`).
+| Host | Encoder used |
+|---|---|
+| macOS | VideoToolbox (`hevc`, `h264`, `prores`) |
+| NVIDIA GPU (Linux, Windows) | NVENC |
+| Intel GPU (Linux, Windows) | Quick Sync (QSV) |
+| AMD / Intel GPU (Linux) | VAAPI |
+| AMD GPU (Windows) | AMF |
+
+Codecs are `hevc` (default), `h264` and `prores`. Force a backend with
+`VERT_HWACCEL=nvenc` (or `videotoolbox|qsv|vaapi|amf|software`). The old
+`./scripts/mac-gpu-accelerator.sh` still works and calls the same script.
 
 ---
 
@@ -185,7 +213,11 @@ Full write-up, including why each control is there: **[docs/ARCHITECTURE.md#secu
 | `install.sh` dies on "Docker daemon isn't running" | Start Docker Desktop, then re-run `./install.sh` |
 | `vert` says "is not responding on http://127.0.0.1:8394" | The container isn't up — run `vert up` (or `docker compose up -d`), then `vert logs` if it still fails |
 | Build takes a long time on first run | Expected — the image pulls `ffmpeg`, `tesseract`, `poppler`, `pandoc` and friends; subsequent builds are cached |
-| Container can't write to `./output`/`./input` on Linux | Set `VERT_UID`/`VERT_GID` in `.env` to your host `id -u`/`id -g` (macOS/Windows Docker Desktop doesn't need this; `install.sh` sets it automatically on Linux) |
+| Container can't write to `./output`/`./input` on Linux | Set `VERT_UID`/`VERT_GID` in `.env` to your host `id -u`/`id -g` (macOS/Windows Docker Desktop doesn't need this; `install.sh` sets it automatically on Linux). If you run as root, leave them unset and run `chown 10001:10001 input output` |
+| "Permission denied" on `./output` on Fedora / RHEL / Rocky | SELinux is blocking the bind mount. Set `VERT_MOUNT_OPTS=:z` in `.env` (`install.sh` does this when SELinux is enforcing) |
+| `docker compose` is "not a docker command" on an older Linux | Install the Compose plugin, or the standalone `docker-compose` v1: the scripts use either |
+| `$'\r': command not found` when running a script on Windows | The script was checked out with CRLF line endings. Re-clone, or run `git config core.autocrlf input` then `git checkout -- .`. The repo's `.gitattributes` forces LF for new clones |
+| Conversions are very slow on Windows | The project folder is on the Windows drive (`/mnt/c/...`). Clone it into your WSL home (`~/`) instead |
 | A conversion fails with a generic error | Run `vert logs` (or `docker compose logs better-vert`) — the real exception is logged server-side; the HTTP response intentionally doesn't leak internal paths |
 | Upload rejected as too large | Raise `MAX_UPLOAD_MB` in `.env` and restart the stack |
 | `vert formats` only shows the static list | The API isn't reachable — it falls back to a built-in list when the container is down; `vert up` first for the live catalogue |
@@ -199,24 +231,26 @@ Better-vertsh/
 ├── backend/
 │   ├── app.py                   # FastAPI application with CORS, COOP/COEP, and telemetry
 │   ├── markitdown_engine.py     # Microsoft MarkItDown + Tesseract OCR + Poppler fallbacks
-│   ├── media_engine.py          # FFmpeg & ImageMagick converter tuned for 18-core M5 Max
+│   ├── media_engine.py          # FFmpeg & ImageMagick converter, multi-threaded across all cores
 │   └── requirements.txt         # Pinned dependencies
 ├── frontend/
-│   ├── index.html               # Modern Apple Studio dark mode UI
+│   ├── index.html               # Dark mode UI
 │   ├── style.css                # Glassmorphism, CSS grid, micro-animations
 │   └── app.js                   # Universal & Markdown controller with marked.js
 ├── input/                       # Drop files here for batch conversion
-├── output/                      # Converted files land here directly on your Mac
+├── output/                      # Converted files land here directly on your machine
 ├── scripts/
 │   ├── vert                     # Command line client (interactive + scriptable)
 │   ├── convert.sh               # CLI batch converter
-│   └── mac-gpu-accelerator.sh   # Host Apple VideoToolbox GPU encoding helper
+│   ├── gpu-accelerator.sh       # Host GPU encode helper (VideoToolbox / NVENC / QSV / VAAPI / AMF)
+│   ├── mac-gpu-accelerator.sh   # Back-compat shim for gpu-accelerator.sh
+│   └── lib/platform.sh          # OS detection, compose v1/v2, browser opener (sourced)
 ├── docs/                        # Deeper reference docs (formats, CLI, architecture)
 ├── install.sh                   # Prerequisite check, build, start, PATH setup
 ├── convert.sh                   # Root shortcut for scripts/convert.sh
 ├── .env.example                 # Copy to .env to override port / upload limit
-├── Dockerfile                   # Multi-stage ARM64 build (Python 3.12, FFmpeg, Tesseract, Poppler)
-├── docker-compose.yml            # Compose configuration tuned for Apple Silicon
+├── Dockerfile                   # Multi-arch (amd64 + arm64) image: Python 3.12, FFmpeg, Tesseract, Poppler
+├── docker-compose.yml            # Compose configuration (loopback-only port, SELinux-aware mounts)
 └── README.md
 ```
 
@@ -228,8 +262,8 @@ Better-vertsh/
 
 ## Contributing
 
-This is a personal, single-purpose build tuned for one machine class (Apple
-Silicon M-series under Docker). Issues and PRs that fix a real bug or extend
+This is a personal build, developed mainly on Apple Silicon and designed to run
+on any host Docker supports (macOS, Linux, Windows; x86-64 and ARM64). Issues and PRs that fix a real bug or extend
 format support are welcome — open an issue describing the input/output
 formats and host OS before sending a PR.
 

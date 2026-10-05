@@ -941,7 +941,7 @@ async def handle_image_to_svg(
         await proc_pbm.communicate()
 
         if pbm_path.exists() and pbm_path.stat().st_size > 0:
-            log_entry(logs, "EXEC", "Tracing vector bezier paths with Potrace (arm64)...")
+            log_entry(logs, "EXEC", "Tracing vector bezier paths with Potrace...")
             cmd_potrace = ["potrace", "-s", str(pbm_path), "-o", str(out_path)]
             proc_potrace = await asyncio.create_subprocess_exec(
                 *cmd_potrace, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
@@ -1693,7 +1693,7 @@ async def convert_media(
 
             cmd.append(str(out_path))
 
-            log_entry(logs, "EXEC", f"Running FFmpeg ARM64 worker: {' '.join(cmd[1:6])}...")
+            log_entry(logs, "EXEC", f"Running FFmpeg worker: {' '.join(cmd[1:6])}...")
             proc = await asyncio.create_subprocess_exec(
                 *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
             )

@@ -1,0 +1,11 @@
+# Keep line endings stable across macOS, Linux and Windows checkouts.
+# Shell scripts must stay LF: with core.autocrlf=true on Windows they would be
+# checked out as CRLF and bash fails with "$'\r': command not found".
+* text=auto
+
+*.sh        text eol=lf
+scripts/vert text eol=lf
+Dockerfile  text eol=lf
+*.py        text eol=lf
+*.yml       text eol=lf
+*.env*      text eol=lf

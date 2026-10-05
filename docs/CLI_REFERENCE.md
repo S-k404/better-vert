@@ -1,18 +1,21 @@
 # `vert` CLI reference
 
 `scripts/vert` is a single bash script (bash 3.2 compatible, so it runs
-unmodified on macOS's stock shell) that drives the API over `curl`. It is
-installed on your `PATH` by `./install.sh`, or run in place as `./scripts/vert`.
+unmodified on macOS's stock shell, and on Linux and WSL2) that drives the API over
+`curl`. It is installed on your `PATH` by `./install.sh`, or run in place as
+`./scripts/vert`. It follows its own symlink, so the installed link can be run
+from any directory. On Windows use WSL2 (Git Bash is best effort); the web UI and
+`docker compose` need no shell.
 
 ## Stack lifecycle
 
 | Command | What it does |
 |---|---|
-| `vert up [--build]` | Start the container (`docker compose up -d`) and poll `/api/version` until it answers, up to 90s |
+| `vert up [--build]` | Start the container (`docker compose up -d`, or `docker-compose` v1 if that is all you have) and poll `/api/version` until it answers, up to 90s |
 | `vert down` | `docker compose down` |
 | `vert logs [-f]` | Tail container logs (default: last 100 lines) |
 | `vert status` / `vert health` | Health check plus `/api/system-info` host/acceleration telemetry |
-| `vert open` | Open the web UI in your default browser (`open` / `xdg-open`) |
+| `vert open` | Open the web UI in your default browser (`open` on macOS, `xdg-open` on Linux, `wslview`/`explorer.exe` on WSL and Windows); prints the URL if none is available |
 
 ## Conversion
 
