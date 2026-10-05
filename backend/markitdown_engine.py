@@ -29,22 +29,45 @@ except Exception as e:
     _md = MarkItDown()
 
 
+# Device names Windows refuses to create as a file, with or without an extension
+# ("con.md", "NUL.txt"). Converted files land on the host through a bind mount, so
+# a name the Linux container accepts can still fail to write on a Windows host.
+_WINDOWS_RESERVED = frozenset(
+    {"con", "prn", "aux", "nul"}
+    | {f"com{i}" for i in range(1, 10)}
+    | {f"lpt{i}" for i in range(1, 10)}
+)
+
+
+def avoid_reserved_name(name: str) -> str:
+    """Prefixes a Windows device name with '_' so it can be written on any host OS."""
+    if name.split(".", 1)[0].strip().lower() in _WINDOWS_RESERVED:
+        return f"_{name}"
+    return name
+
+
 def safe_stem(name: str) -> str:
     """Sanitizes filename stem for safe filesystem writing."""
     stem = Path(name).stem
     stem = re.sub(r"[^\w\-. ]+", "_", stem).strip() or "converted"
-    return stem[:120]
+    return avoid_reserved_name(stem[:120])
 
 
 def unique_name(filename: str, taken: set[str], target_ext: str = "md") -> str:
-    """Ensures report.pdf and report.docx don't collide."""
+    """Ensures report.pdf and report.docx don't collide.
+
+    Collisions are judged case-insensitively: macOS and Windows filesystems treat
+    "Report.md" and "report.md" as one file, so the second would overwrite the first
+    on disk (or when the zip is extracted there).
+    """
     stem = safe_stem(filename)
     orig_ext = Path(filename).suffix.lstrip(".").lower()
+    seen = {t.lower() for t in taken}
     candidate = f"{stem}.{target_ext}"
-    if candidate in taken:
+    if candidate.lower() in seen:
         candidate = f"{stem}-{orig_ext}.{target_ext}" if orig_ext else f"{stem}-1.{target_ext}"
     n = 2
-    while candidate in taken:
+    while candidate.lower() in seen:
         candidate = f"{stem}-{orig_ext}-{n}.{target_ext}" if orig_ext else f"{stem}-{n}.{target_ext}"
         n += 1
     taken.add(candidate)

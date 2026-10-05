@@ -10,12 +10,25 @@
 
 set -euo pipefail
 
-PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# Resolve symlinks before locating the project: install.sh links this file onto
+# the PATH, and `dirname "$0"` would then name the link's directory, not the repo.
+_src="${BASH_SOURCE[0]}"
+while [ -h "$_src" ]; do
+  _dir="$(cd -P "$(dirname "$_src")" && pwd)"
+  _src="$(readlink "$_src")"
+  case "$_src" in /*) ;; *) _src="$_dir/$_src" ;; esac
+done
+SCRIPT_DIR="$(cd -P "$(dirname "$_src")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+unset _src _dir
+
+# shellcheck source=lib/platform.sh
+. "$SCRIPT_DIR/lib/platform.sh"
 
 # Host port: .env wins, then the environment, then the compose default.
 PORT_FROM_ENV=""
 if [ -f "$PROJECT_DIR/.env" ]; then
-  PORT_FROM_ENV="$(grep -E '^PORT=' "$PROJECT_DIR/.env" | tail -1 | cut -d= -f2- | tr -d '"'"'"' ' || true)"
+  PORT_FROM_ENV="$(grep -E '^PORT=' "$PROJECT_DIR/.env" | tail -1 | cut -d= -f2- | tr -d '"'"'"' \r' || true)"
 fi
 PORT="${VERT_PORT:-${PORT_FROM_ENV:-8394}}"
 API="http://127.0.0.1:${PORT}"
@@ -53,7 +66,12 @@ pp() {
 need_curl() { command -v curl >/dev/null 2>&1 || die "curl is required but not installed."; }
 is_up()     { curl -fsS --max-time 3 "$API/api/version" >/dev/null 2>&1; }
 require_up(){ is_up || die "Better VERT is not responding on $API. Start it with: vert up"; }
-compose()   { (cd "$PROJECT_DIR" && docker compose "$@"); }
+# `compose` itself comes from lib/platform.sh (v2 plugin, v1 binary fallback).
+vert_compose() {
+  command -v docker >/dev/null 2>&1 || die "Docker is not installed. Get it: https://docs.docker.com/get-docker/"
+  compose_available || die "Docker Compose is not available. Update Docker, or install the Compose plugin."
+  (cd "$PROJECT_DIR" && compose "$@")
+}
 
 # ---------------------------------------------------------------------------
 # Format catalogue - the same categories the web UI shows.
@@ -244,7 +262,7 @@ run_with_progress() {
 
 cmd_up() {
   info "Starting Better VERT on port $PORT..."
-  if [ $# -gt 0 ]; then compose up -d "$@"; else compose up -d; fi
+  if [ $# -gt 0 ]; then vert_compose up -d "$@"; else vert_compose up -d; fi
   info "Waiting for the API..."
   local i=0
   printf '\033[?25l'
@@ -261,16 +279,13 @@ cmd_up() {
   die "Timed out waiting for $API. Check: vert logs"
 }
 
-cmd_down() { info "Stopping Better VERT..."; if [ $# -gt 0 ]; then compose down "$@"; else compose down; fi; }
+cmd_down() { info "Stopping Better VERT..."; if [ $# -gt 0 ]; then vert_compose down "$@"; else vert_compose down; fi; }
 
-cmd_logs() { if [ $# -gt 0 ]; then compose logs "$@" better-vert; else compose logs --tail=100 better-vert; fi; }
+cmd_logs() { if [ $# -gt 0 ]; then vert_compose logs "$@" better-vert; else vert_compose logs --tail=100 better-vert; fi; }
 
 cmd_open() {
   require_up
-  if   command -v open     >/dev/null 2>&1; then open "$API"
-  elif command -v xdg-open >/dev/null 2>&1; then xdg-open "$API"
-  else echo "$API"
-  fi
+  open_url "$API" || echo "$API"
 }
 
 cmd_status() {
@@ -330,7 +345,10 @@ do_convert() {
     die "Conversion failed. Full detail is in the server log: vert logs"
   fi
 
-  name="$(grep -i '^x-converted-file:' "$headers" | tail -1 | cut -d: -f2- | tr -d '\r' | xargs || true)"
+  # Trim with sed, not xargs: xargs collapses repeated spaces inside the name
+  # ("my  file.mp3" would be saved as "my file.mp3").
+  name="$(grep -i '^x-converted-file:' "$headers" | tail -1 | cut -d: -f2- | tr -d '\r' \
+    | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' || true)"
   [ -n "$name" ] || name="$(basename "${input%.*}").$target"
   rm -f "$headers"
   mv "$body" "$outdir/$name"

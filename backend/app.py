@@ -25,6 +25,7 @@ import math
 import tempfile
 from datetime import datetime
 from markitdown_engine import (
+    avoid_reserved_name,
     convert_bytes_to_markdown,
     convert_bytes_to_markdown_with_assets,
     safe_stem,
@@ -75,7 +76,7 @@ app.add_middleware(
 @app.middleware("http")
 async def add_hardware_and_coop_headers(request: Request, call_next):
     """
-    Enables Cross-Origin Isolation for Browser-side WebAssembly SIMD and WebGPU Metal compute,
+    Enables Cross-Origin Isolation for Browser-side WebAssembly SIMD and WebGPU compute,
     while removing standard upload limitations.
     """
     response = await call_next(request)
@@ -104,7 +105,7 @@ def safe_filename(name: Optional[str], fallback: str = "upload.dat") -> str:
     """
     candidate = Path(name or "").name
     candidate = re.sub(r"[^\w\-. ]+", "_", candidate).strip(" .")
-    return candidate[:180] or fallback
+    return avoid_reserved_name(candidate[:180] or fallback)
 
 
 def safe_output_path(base: Path, name: str, fallback: str = "converted.dat") -> Path:
@@ -140,22 +141,53 @@ def _detect_host_label(arch: str, system_os: str) -> str:
     """Best-effort host description from what the container can actually observe.
 
     The container never has access to the real host model name (Docker Desktop
-    virtualizes /proc/cpuinfo), so this reports architecture family rather than
-    guessing a specific chip generation.
+    virtualizes /proc/cpuinfo) and cannot tell macOS, Windows and Linux hosts apart,
+    since it is always a Linux container. So this reports only the CPU architecture
+    family; the web UI adds the OS it can see from the browser.
     """
+    family = "ARM64" if arch in ("arm64", "aarch64") else arch
+    return f"{family} host ({system_os} container)"
+
+
+def _x86_cpu_flags() -> set:
+    """CPU feature flags from /proc/cpuinfo (Linux containers only), else empty."""
+    try:
+        with open("/proc/cpuinfo", encoding="utf-8", errors="replace") as fh:
+            for line in fh:
+                if line.startswith("flags"):
+                    return set(line.split(":", 1)[1].split())
+    except OSError:
+        pass
+    return set()
+
+
+def _detect_simd(arch: str) -> Optional[str]:
+    """Names the widest SIMD instruction set the container's CPU exposes, if known.
+
+    FFmpeg and ImageMagick pick the right kernels at runtime, so this is telemetry
+    only. It is architecture-aware: reporting NEON on an Intel/AMD host is wrong.
+    """
+    arch = arch.lower()
     if arch in ("arm64", "aarch64"):
-        return f"Apple Silicon host ({system_os} container, {arch})"
-    return f"{arch} host ({system_os} container)"
+        return "NEON"  # mandatory in the AArch64 baseline
+    if arch in ("x86_64", "amd64"):
+        flags = _x86_cpu_flags()
+        for flag, label in (("avx512f", "AVX-512"), ("avx2", "AVX2"), ("avx", "AVX"), ("sse4_2", "SSE4.2")):
+            if flag in flags:
+                return label
+        return "SSE2"  # mandatory in the x86-64 baseline
+    return None
 
 
 @app.get("/api/system-info")
 def get_system_info():
     """Returns real-time host and hardware acceleration telemetry."""
-    cpu_count = psutil.cpu_count(logical=True) or 18
-    physical_cores = psutil.cpu_count(logical=False) or 12
+    cpu_count = psutil.cpu_count(logical=True) or os.cpu_count() or 1
+    physical_cores = psutil.cpu_count(logical=False) or cpu_count
     mem = psutil.virtual_memory()
     arch = platform.machine()
     system_os = platform.system()
+    simd = _detect_simd(arch)
 
     return {
         "host": _detect_host_label(arch, system_os),
@@ -166,10 +198,12 @@ def get_system_info():
         "memory_total_gb": round(mem.total / (1024**3), 2),
         "memory_available_gb": round(mem.available / (1024**3), 2),
         "acceleration": {
-            "container_neon_simd": True,
+            "simd": simd,
+            "container_neon_simd": simd == "NEON",
             "container_threads": cpu_count,
             "browser_webgpu_ready": True,
             "videotoolbox_bridge_supported": True,
+            "host_gpu_script": "scripts/gpu-accelerator.sh",
         },
         "supported_formats": SUPPORTED_FORMATS,
     }

@@ -14,13 +14,15 @@ services:
       # reachable from other machines on the network.
       - "127.0.0.1:${PORT:-8394}:8000"
     volumes:
-      # Converted files (.md, videos, audio, images) land here on your Mac
-      - ./output:/data/output
+      # Converted files (.md, videos, audio, images) land in ./output on your machine.
+      # VERT_MOUNT_OPTS is empty everywhere except SELinux hosts (Fedora, RHEL, ...),
+      # where install.sh sets it to ":z" so the container may use the folders.
+      - ./output:/data/output${VERT_MOUNT_OPTS:-}
       # Drop files here for CLI / automated batch conversion
-      - ./input:/data/input
+      - ./input:/data/input${VERT_MOUNT_OPTS:-}
       # Live development mounts
-      - ./backend:/app/backend
-      - ./frontend:/app/frontend
+      - ./backend:/app/backend${VERT_MOUNT_OPTS:-}
+      - ./frontend:/app/frontend${VERT_MOUNT_OPTS:-}
     environment:
       - INPUT_DIR=/data/input
       - OUTPUT_DIR=/data/output
@@ -29,7 +31,7 @@ services:
       - ALLOWED_ORIGINS=http://localhost:${PORT:-8394},http://127.0.0.1:${PORT:-8394}
       # Per-file upload ceiling in MB.
       - MAX_UPLOAD_MB=${MAX_UPLOAD_MB:-2048}
-    # M5 Max Resource Tuning: 2GB shared memory buffer for multi-threaded FFmpeg / MarkItDown
+    # 2GB shared memory buffer for multi-threaded FFmpeg / MarkItDown
     shm_size: "2gb"
     restart: unless-stopped
     # Containers should not be able to gain privileges beyond what they start with.

@@ -741,7 +741,7 @@
               </svg>
             </div>
             <span class="pdf-drop-title">Drop 2 or more PDFs to combine</span>
-            <span class="pdf-drop-sub">Click to select files from your Mac</span>
+            <span class="pdf-drop-sub">Click to select files from your computer</span>
             <input type="file" id="fileInputPdfMerge" class="hidden-input" accept=".pdf,application/pdf" multiple />
           </div>
 
@@ -852,7 +852,7 @@
     <section class="tab-content" id="tab-batch">
       <div class="section-hero">
         <h2>Batch Folder Automation</h2>
-        <p>Drop files into <code>./input/</code> on your Mac and run one-click batch conversion directly into <code>./output/</code>.</p>
+        <p>Drop files into <code>./input/</code> on your computer and run one-click batch conversion directly into <code>./output/</code>.</p>
       </div>
 
       <div class="batch-grid">
@@ -1106,7 +1106,7 @@
             <div class="stat-card">
               <span class="stat-label">Processor</span>
               <span class="stat-value" id="statHost">Detecting&hellip;</span>
-              <span class="stat-sub">Architecture: ARM64 / aarch64</span>
+              <span class="stat-sub" id="statArch">Architecture: detecting&hellip;</span>
             </div>
 
             <div class="stat-card">
@@ -1116,28 +1116,28 @@
             </div>
 
             <div class="stat-card">
-              <span class="stat-label">Memory Bandwidth &amp; RAM</span>
-              <span class="stat-value" id="statRam">Unified Memory</span>
+              <span class="stat-label">Memory</span>
+              <span class="stat-value" id="statRam">Detecting&hellip;</span>
               <span class="stat-sub">2GB Shared Memory Buffer</span>
             </div>
 
             <div class="stat-card">
               <span class="stat-label">Hardware Acceleration</span>
               <span class="stat-value text-emerald">Active</span>
-              <span class="stat-sub">ARM NEON + Browser Metal GPU</span>
+              <span class="stat-sub" id="statAccel">SIMD + browser GPU</span>
             </div>
           </div>
 
           <div class="instructions-box">
-            <h4>Native macOS VideoToolbox GPU Acceleration</h4>
-            <p>
-              For 4K/8K jobs where you want 100% native Apple VideoToolbox GPU encoding directly on macOS without container virtualization overhead:
+            <h4 id="hostGpuTitle">Native GPU Acceleration</h4>
+            <p id="hostGpuIntro">
+              For 4K/8K jobs where you want hardware GPU encoding directly on your computer, without container virtualization overhead:
             </p>
             <div class="code-box-row">
-              <code id="videoToolboxCommand">./scripts/mac-gpu-accelerator.sh input.mov output.mp4</code>
+              <code id="videoToolboxCommand">./scripts/gpu-accelerator.sh input.mov output.mp4</code>
               <button type="button" class="btn-copy-code" id="btnCopyVtb" title="Copy command">Copy</button>
             </div>
-            <p class="note">Uses <code>h264_videotoolbox</code> and <code>hevc_videotoolbox</code> from your host Homebrew FFmpeg.</p>
+            <p class="note" id="hostGpuNote">Picks a hardware encoder your machine can run (VideoToolbox, NVENC, Quick Sync, VAAPI or AMF) from the FFmpeg on your PATH, and falls back to software if none works.</p>
           </div>
         </div>
       </div>

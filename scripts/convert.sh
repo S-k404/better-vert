@@ -1,15 +1,23 @@
 #!/usr/bin/env bash
 # Batch-convert everything in ./input to Markdown in ./output, no browser needed.
-# Incorporates File Converter batch functionality for Apple M5 Max.
 #
 # Usage:
 #   ./scripts/convert.sh                  (converts ./input)
 #   ./scripts/convert.sh ~/Desktop/docs   (copies that folder into ./input first)
 
 set -euo pipefail
-PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$PROJECT_DIR"
 mkdir -p input output
+
+# shellcheck source=lib/platform.sh
+. "$SCRIPT_DIR/lib/platform.sh"
+compose_available || { echo "Docker Compose is not available. Install Docker first." >&2; exit 1; }
+
+# Git Bash/MSYS2 rewrites anything that looks like a Unix path ("/data/input")
+# before handing it to docker.exe; the script below must arrive untouched.
+export MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*'
 
 if [ $# -gt 0 ]; then
   echo "Copying files from $1 into ./input..."
@@ -17,7 +25,7 @@ if [ $# -gt 0 ]; then
 fi
 
 echo "Running batch conversion inside Better VERT container..."
-docker compose exec -T better-vert bash -c '
+compose exec -T better-vert bash -c '
 shopt -s nullglob globstar
 for f in /data/input/**/*; do
   [ -f "$f" ] || continue
