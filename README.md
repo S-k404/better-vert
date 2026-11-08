@@ -1,3 +1,12 @@
+<!-- datasheet:banner -->
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset=".github/assets/banner-dark.svg">
+    <img src=".github/assets/banner-light.svg" alt="Better VERT: Local-first universal converter: 250+ formats through FFmpeg and ImageMagick, plus anything-to-Markdown. One Docker container." width="100%">
+  </picture>
+</p>
+<!-- /datasheet:banner -->
+
 # Better VERT · Apple M5 Max Studio Edition
 
 A customized, privacy-focused, high-performance universal conversion suite. It is tuned for **Apple Silicon (M-series)** but runs the same way on **macOS, Linux and Windows**, on both **x86-64 and ARM64**.
@@ -7,6 +16,17 @@ It merges the universal format capabilities of [VERT](https://github.com/VERT-sh
 Everything runs **100% locally** in Docker on your own machine — no files ever leave your machine.
 
 ---
+
+<!-- datasheet:figure -->
+## At a glance
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset=".github/assets/diagram-dark.svg">
+    <img src=".github/assets/diagram-light.svg" alt="Block diagram: one container, two engines" width="100%">
+  </picture>
+</p>
+<!-- /datasheet:figure -->
 
 ## ⚡ What Makes It "Better VERT"?
 
