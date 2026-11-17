@@ -7,15 +7,11 @@
 </p>
 <!-- /datasheet:banner -->
 
-# Better VERT · Apple M5 Max Studio Edition
+# Better VERT
 
-A customized, privacy-focused, high-performance universal conversion suite. It is tuned for **Apple Silicon (M-series)** but runs the same way on **macOS, Linux and Windows**, on both **x86-64 and ARM64**.
+**Convert almost anything to almost anything, on your own machine.**
 
-It merges the universal format capabilities of [VERT](https://github.com/VERT-sh/VERT) with the document-parsing intelligence of [Microsoft MarkItDown](https://github.com/microsoft/markitdown) (with Tesseract OCR, Poppler PDF text/table extraction, and batch automation).
-
-Everything runs **100% locally** in Docker on your own machine — no files ever leave your machine.
-
----
+Better VERT merges the format reach of [VERT](https://github.com/VERT-sh/VERT) with the document intelligence of [Microsoft MarkItDown](https://github.com/microsoft/markitdown), in one Docker container: 250+ formats through FFmpeg and ImageMagick, anything-to-Markdown with Tesseract OCR and Poppler, PDF merge and split, and a command line (`vert`) next to the web UI. It is tuned for Apple Silicon but runs the same on macOS, Linux and Windows, on x86-64 and ARM64. Everything runs **100% locally**: no file ever leaves your machine.
 
 <!-- datasheet:figure -->
 ## At a glance
@@ -26,11 +22,27 @@ Everything runs **100% locally** in Docker on your own machine — no files ever
     <img src=".github/assets/diagram-light.svg" alt="Block diagram: one container, two engines" width="100%">
   </picture>
 </p>
+
+| Characteristic | Detail |
+| --- | --- |
+| **Run** | `./install.sh` builds and starts it; then open `http://localhost:8394` or use the `vert` command |
+| **Converts** | 250+ formats in video, audio, image, document and data, plus cross-medium routes such as video to PDF storyboard |
+| **Also does** | Anything to Markdown with OCR, PDF merge and split, a media inspector, batch folders |
+| **Limits** | 2 GB per upload by default (`MAX_UPLOAD_MB`); the port listens on `127.0.0.1` only |
+| **Requires** | Docker (Desktop, or Engine with the Compose plugin); `curl` for the `vert` command |
 <!-- /datasheet:figure -->
 
-## ⚡ What Makes It "Better VERT"?
+## Quick start
 
-| Feature | Upstream VERT | File Converter | **Better VERT (Studio Edition)** |
+```bash
+git clone https://github.com/S-k404/better-vert.git
+cd better-vert && ./install.sh     # checks prerequisites, builds, starts, offers to link `vert`
+vert convert clip.mov --to mp4     # or open http://localhost:8394
+```
+
+## What makes it better
+
+| Feature | Upstream VERT | File Converter (my earlier Markdown-only converter, now built in) | **Better VERT** |
 |---|---|---|---|
 | **Video Conversion** | Offloaded to external cloud (`vertd.vert.sh`) or separate Rust daemon | Not supported | **Local multi-threaded FFmpeg** (uses every core you give it) |
 | **Anything &rarr; Markdown** | Limited (pandoc wasm) | Yes (`markitdown`) | **Fully integrated** (MarkItDown + Tesseract OCR + Poppler + live preview) |
@@ -38,8 +50,6 @@ Everything runs **100% locally** in Docker on your own machine — no files ever
 | **Upload Limits** | 10MB limit in Nginx | Unlimited | **2 GB per file by default** (`MAX_UPLOAD_MB`, raise as needed) |
 | **Batch Processing** | Manual one-by-one | `./convert.sh` | **Both Web UI Batch Monitor & `./convert.sh` CLI** |
 | **Docker Stack** | Complex multi-repo setup | Single container | **Single-command Compose stack** (`8394:8000`) |
-
----
 
 ## Requirements
 
@@ -56,7 +66,7 @@ nothing to select for x86-64 versus ARM64.
 - `curl` (required by the CLI); `jq` and `unzip` are optional but improve `vert status`/`vert md` output
 - Optional, for the host GPU helper `./scripts/gpu-accelerator.sh` only: a native `ffmpeg` on the host (`brew install ffmpeg`, `winget install Gyan.FFmpeg`, or your distro's package). The Docker container itself doesn't need this
 
-## 🚀 Quick Start
+## Install and run
 
 ### Option A — one-line install (recommended)
 
@@ -76,6 +86,7 @@ waits for the API to come up, and offers to put the `vert` command on your PATH.
 ```
 ./install.sh --no-start      # set up config only
 ./install.sh --link          # install `vert` without prompting
+./install.sh --no-link       # skip the PATH step
 ./install.sh --prefix ~/bin  # choose where `vert` is linked
 ```
 
@@ -90,13 +101,24 @@ docker compose up -d --build
 
 On Windows PowerShell, use `Copy-Item .env.example .env` for the first line.
 On a Linux host, also set `VERT_UID`/`VERT_GID` in `.env` to `id -u`/`id -g` (see
-[Troubleshooting](#-troubleshooting)).
+[Troubleshooting](#troubleshooting)).
 
 To stop: `docker compose down` (or `vert down`).
 
----
+## Typical application
 
-## 💻 Command Line Tool
+```bash
+# 1. A phone video to something smaller, at a chosen quality and size
+vert convert clip.mov --to mp4 --crf 20 --resolution 1920x1080
+
+# 2. A pile of reports and slides to Markdown notes (OCR included)
+vert md report.pdf slides.pptx -o ./notes
+
+# 3. A whole folder, no questions asked
+./convert.sh ~/Desktop/research-papers
+```
+
+## Command line tool
 
 `vert` drives the whole stack from your terminal. Run it with no arguments for an
 interactive picker with arrow-key navigation, the same format categories as the
@@ -142,11 +164,11 @@ vert open                       # open the web UI
 vert down
 ```
 
+Also: `vert ls` shows what is in `./input` and `./output`, `vert logs -f` follows the container log, and `vert i` is the same as a bare `vert`. `vert convert` takes `--fps`, `--quality`, `--codec`, `--audio-bitrate`, `--trim-start`, `--trim-duration`, `--speed`, `--dpi` and `--loudnorm` besides `--crf` and `--resolution`; `vert formats` without a category shows all six (video, audio, image, document, data, cross).
+
 Full command and flag reference: **[docs/CLI_REFERENCE.md](docs/CLI_REFERENCE.md)**.
 
----
-
-## 🛠 Features & Workflows
+## Features
 
 ### 1. Universal 250+ Format Converter
 Convert between video, audio, image, and document formats using every available CPU
@@ -200,9 +222,22 @@ Codecs are `hevc` (default), `h264` and `prores`. Force a backend with
 `VERT_HWACCEL=nvenc` (or `videotoolbox|qsv|vaapi|amf|software`). The old
 `./scripts/mac-gpu-accelerator.sh` still works and calls the same script.
 
----
+### 5. The web app, tab by tab
+Open [http://localhost:8394](http://localhost:8394). There are six tabs:
 
-## 🔐 Security Notes
+| Tab | What it does |
+|---|---|
+| **Converter** | Pick a category and a target format, drop files in, watch the progress |
+| **Markdown Studio** | Anything to Markdown with MarkItDown, OCR and a live preview |
+| **PDF Studio** | Merge several PDFs into one, or split a PDF into pages or pull out a page range (Poppler) |
+| **Inspector** | Stream, codec and metadata probe for any file (`vert inspect` does the same) |
+| **Batch Folder** | Converts everything in `./input` to `./output` |
+| **Settings** | Default target formats, default encoding and quality (CRF, codec, audio bitrate, image quality), workflow automation and hardware telemetry |
+
+### 6. Cross-medium conversions
+Some targets are pipelines rather than re-encodes: a **PDF storyboard** from a video (keyframes plus telemetry), a neon **waveform video** from audio, a **transcript** in Markdown from audio, a **ZIP of page images** and embedded figures from a document, plus Image to SVG, Video to GIF and Data to XLSX. The full table is in [docs/FORMATS.md](docs/FORMATS.md#cross-medium-routes-post-apiconvert-universal-with-a-cross-target).
+
+## Security notes
 
 This stack processes untrusted files (anything you drop on it) through FFmpeg,
 ImageMagick, Tesseract, Poppler and Pandoc, so it is set up to stay local:
@@ -224,9 +259,24 @@ front of it and set `ALLOWED_ORIGINS` accordingly.
 
 Full write-up, including why each control is there: **[docs/ARCHITECTURE.md#security-model](docs/ARCHITECTURE.md#security-model)**.
 
----
+## Absolute maximum ratings
 
-## 🩹 Troubleshooting
+| Parameter | Limit |
+|---|---|
+| Upload size | 2 GB per file by default (`MAX_UPLOAD_MB`, raise it in `.env`) |
+| Web port | `8394` on `127.0.0.1` only (`PORT` in `.env`) |
+| Formats | 250+ across video, audio, image, document, data and cross-medium targets |
+| CLI needs | `curl`; `jq` and `unzip` are optional |
+| Host GPU | only through `./scripts/gpu-accelerator.sh` on the host, since Docker cannot reach the GPU on macOS or Windows |
+| Files sent to a third-party server | 0 |
+
+## Errata
+
+* On Windows use WSL2 and keep the clone in your WSL home (`~/`), not under `/mnt/c`, where bind mounts are much slower. Git Bash is best effort.
+* `vert formats` shows the live catalogue when the stack is running and a built-in list when it is not.
+* On a Linux host, set `VERT_UID` and `VERT_GID` in `.env` (the installer does it for you) so output files are not owned by root.
+
+## Troubleshooting
 
 | Symptom | Fix |
 |---|---|
@@ -242,12 +292,10 @@ Full write-up, including why each control is there: **[docs/ARCHITECTURE.md#secu
 | Upload rejected as too large | Raise `MAX_UPLOAD_MB` in `.env` and restart the stack |
 | `vert formats` only shows the static list | The API isn't reachable — it falls back to a built-in list when the container is down; `vert up` first for the live catalogue |
 
----
-
-## 📂 Project Structure
+## Project structure
 
 ```
-Better-vertsh/
+better-vert/
 ├── backend/
 │   ├── app.py                   # FastAPI application with CORS, COOP/COEP, and telemetry
 │   ├── markitdown_engine.py     # Microsoft MarkItDown + Tesseract OCR + Poppler fallbacks
@@ -290,3 +338,13 @@ formats and host OS before sending a PR.
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+<!-- datasheet:footer -->
+---
+
+<p align="center">
+  <a href="https://github.com/S-k404/music-tools">&larr; U3 music-tools</a> &middot;
+  <a href="https://github.com/S-k404/S-k404">SK-404 index</a> &middot;
+  <a href="https://github.com/S-k404/music-visualiser">U5 music-visualiser &rarr;</a>
+</p>
+<!-- /datasheet:footer -->

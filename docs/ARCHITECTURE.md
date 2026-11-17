@@ -3,7 +3,7 @@
 ## Components
 
 ```
-Better-vertsh/
+better-vert/
 ├── backend/
 │   ├── app.py                   # FastAPI app: routes, CORS, upload limits, error handling
 │   ├── markitdown_engine.py     # Microsoft MarkItDown + Tesseract OCR + Poppler fallbacks

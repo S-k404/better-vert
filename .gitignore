@@ -45,3 +45,6 @@ Thumbs.db
 *.log
 tmp/
 temp/
+
+# Local AI session notes (kept on disk, not published)
+CLAUDE.md
