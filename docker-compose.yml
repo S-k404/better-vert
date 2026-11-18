@@ -28,7 +28,7 @@ services:
       - OUTPUT_DIR=/data/output
       - PORT=8000
       # Comma-separated browser origins allowed to call the API.
-      - ALLOWED_ORIGINS=http://localhost:${PORT:-8394},http://127.0.0.1:${PORT:-8394}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:${PORT:-8394},http://127.0.0.1:${PORT:-8394}}
       # Per-file upload ceiling in MB.
       - MAX_UPLOAD_MB=${MAX_UPLOAD_MB:-2048}
     # 2GB shared memory buffer for multi-threaded FFmpeg / MarkItDown
